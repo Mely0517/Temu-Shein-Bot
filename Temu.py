@@ -5,8 +5,6 @@ from selenium.webdriver.common.by import By
 import time
 import os
 
-TOKEN = os.getenv("DISCORD_TOKEN")
-
 intents = discord.Intents.default()
 intents.messages = True
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -45,4 +43,3 @@ async def claim(ctx, link: str):
 async def on_ready():
     print(f"🤖 Bot online as {bot.user}")
     print("Ready to auto-accept Temu links!")
-
