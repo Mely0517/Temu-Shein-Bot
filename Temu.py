@@ -27,7 +27,7 @@ async def claim(ctx, link: str):
         browser = uc.Chrome(options=options)
         browser.get(link)
 
-        time.sleep(6)  # Wait for Temu to fully load
+        time.sleep(6)  # wait for Temu page to load
 
         try:
             btn = browser.find_element(By.XPATH, "//button[contains(text(), 'Accept') or contains(text(), 'Join') or contains(text(), 'Open')]")
@@ -35,7 +35,7 @@ async def claim(ctx, link: str):
             await ctx.send("✅ Successfully clicked the Temu link!")
         except:
             await ctx.send("⚠️ Couldn’t find the Accept/Join button, but the page was opened.")
-        
+
         browser.quit()
 
     except Exception as e:
@@ -46,4 +46,3 @@ async def on_ready():
     print(f"🤖 Bot online as {bot.user}")
     print("Ready to auto-accept Temu links!")
 
-bot.run(TOKEN)
