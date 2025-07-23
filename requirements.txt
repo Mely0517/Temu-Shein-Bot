@@ -3,3 +3,4 @@ selenium
 undetected-chromedriver
 beautifulsoup4
 requests
+setuptools
