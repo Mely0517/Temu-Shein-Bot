@@ -49,6 +49,51 @@ async def claim(ctx, link: str):
     except Exception as e:
         await ctx.send(f"❌ Error: {e}")
         print(f"❌ Exception occurred: {e}")
+        @bot.command()
+async def farm(ctx, link: str):
+    print("🚜 Starting Farmland automation")
+    await ctx.send("🌾 Loading your Farmland...")
+
+    try:
+        options = uc.ChromeOptions()
+        options.binary_location = "/usr/bin/google-chrome"
+        options.add_argument("--headless=new")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("user-agent=Mozilla/5.0")
+
+        browser = uc.Chrome(options=options)
+        browser.get(link)
+        time.sleep(8)
+
+        try:
+            # Try clicking common Farmland buttons
+            buttons = browser.find_elements(By.XPATH, "//button")
+            clicked = False
+
+            for btn in buttons:
+                text = btn.text.lower()
+                if any(word in text for word in ["water", "harvest", "start", "grow"]):
+                    btn.click()
+                    clicked = True
+                    await ctx.send(f"✅ Clicked '{btn.text}' in Farmland!")
+                    print(f"✅ Clicked button: {btn.text}")
+                    time.sleep(3)
+
+            if not clicked:
+                await ctx.send("⚠️ No clickable action found. It might already be done or link is invalid.")
+
+        except Exception as e:
+            await ctx.send(f"❌ Failed to click game elements: {e}")
+            print(f"❌ Button click error: {e}")
+
+        browser.quit()
+
+    except Exception as e:
+        await ctx.send(f"❌ Browser error: {e}")
+        print(f"❌ Chrome launch error: {e}")
 
 @bot.event
 async def on_ready():
