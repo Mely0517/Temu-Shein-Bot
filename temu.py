@@ -5,9 +5,9 @@ from selenium.webdriver.common.by import By
 import time
 import os
 
-# Set up Discord bot
+# Set up Discord bot with correct intent
 intents = discord.Intents.default()
-intents.messages = True  # Required to process message content
+intents.message_content = True  # ✅ This is what lets the bot read !commands
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # === !claim Command ===
