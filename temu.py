@@ -5,12 +5,12 @@ from selenium.webdriver.common.by import By
 import time
 import os
 
-# === Discord Bot Setup ===
+# === Bot Setup ===
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# === Chrome Browser Setup ===
+# === Shared Browser Function ===
 def get_browser():
     options = uc.ChromeOptions()
     options.binary_location = "/usr/bin/google-chrome"
@@ -22,172 +22,149 @@ def get_browser():
     options.add_argument("user-agent=Mozilla/5.0")
     return uc.Chrome(options=options)
 
-# === !claim ===
+# === Temu Commands ===
 @bot.command()
 async def claim(ctx, link: str):
-    print("📥 Claiming Temu invite")
     await ctx.send("🚀 Visiting your Temu link...")
-
     try:
         browser = get_browser()
         browser.get(link)
         time.sleep(6)
-
         try:
             btn = browser.find_element(By.XPATH, "//button[contains(text(), 'Accept') or contains(text(), 'Join') or contains(text(), 'Open')]")
             btn.click()
-            await ctx.send("✅ Successfully clicked the Temu link!")
+            await ctx.send("✅ Clicked the Temu button!")
         except:
-            await ctx.send("⚠️ Couldn't find Accept/Join button, but link opened.")
-
+            await ctx.send("⚠️ Button not found, but page opened.")
         browser.quit()
-
     except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
+        await ctx.send(f"❌ Temu error: {e}")
 
-# === !farm ===
 @bot.command()
 async def farm(ctx, link: str):
-    print("🌾 Automating Farmland")
-    await ctx.send("🌱 Visiting your Farmland...")
-
+    await ctx.send("🌾 Opening Farmland...")
     try:
         browser = get_browser()
         browser.get(link)
         time.sleep(8)
-
         clicked = False
         for btn in browser.find_elements(By.XPATH, "//button"):
             text = btn.text.lower()
-            if any(word in text for word in ["water", "harvest", "grow", "start"]):
+            if any(w in text for w in ["water", "harvest", "grow", "start"]):
                 btn.click()
-                clicked = True
                 await ctx.send(f"✅ Clicked '{btn.text}' in Farmland!")
+                clicked = True
                 time.sleep(2)
-
         if not clicked:
-            await ctx.send("⚠️ No buttons found. Game might be complete or not loaded.")
-
+            await ctx.send("⚠️ No buttons found.")
         browser.quit()
-
     except Exception as e:
         await ctx.send(f"❌ Farmland error: {e}")
 
-# === !fish ===
 @bot.command()
 async def fish(ctx, link: str):
-    print("🐟 Automating Fishland")
-    await ctx.send("🐠 Visiting your Fishland...")
-
+    await ctx.send("🐟 Opening Fishland...")
     try:
         browser = get_browser()
         browser.get(link)
         time.sleep(8)
-
         clicked = False
         for btn in browser.find_elements(By.XPATH, "//button"):
             text = btn.text.lower()
-            if any(word in text for word in ["feed", "help", "start", "claim", "collect"]):
+            if any(w in text for w in ["feed", "help", "start", "collect", "claim"]):
                 btn.click()
-                clicked = True
                 await ctx.send(f"✅ Clicked '{btn.text}' in Fishland!")
+                clicked = True
                 time.sleep(2)
-
         if not clicked:
-            await ctx.send("⚠️ No Fishland actions found.")
-
+            await ctx.send("⚠️ No Fishland buttons found.")
         browser.quit()
-
     except Exception as e:
         await ctx.send(f"❌ Fishland error: {e}")
 
-# === !stack ===
 @bot.command()
 async def stack(ctx, link: str):
-    print("🧱 Automating Stack Game")
-    await ctx.send("🧱 Visiting your Stack Game...")
-
+    await ctx.send("🧱 Opening Stack game...")
     try:
         browser = get_browser()
         browser.get(link)
         time.sleep(8)
-
         clicked = False
         for btn in browser.find_elements(By.XPATH, "//button"):
             text = btn.text.lower()
-            if any(word in text for word in ["start", "play", "drop", "stack", "continue"]):
+            if any(w in text for w in ["stack", "drop", "start", "continue", "play"]):
                 btn.click()
+                await ctx.send(f"✅ Clicked '{btn.text}' in Stack game!")
                 clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}' in Stack!")
                 time.sleep(2)
-
         if not clicked:
-            await ctx.send("⚠️ No Stack game buttons found.")
-
+            await ctx.send("⚠️ No Stack buttons found.")
         browser.quit()
-
     except Exception as e:
-        await ctx.send(f"❌ Stack error: {e}")
+        await ctx.send(f"❌ Stack game error: {e}")
 
-# === !spin ===
 @bot.command()
 async def spin(ctx, link: str):
-    print("🎰 Automating Spin Game")
-    await ctx.send("🎰 Visiting your Spin Game...")
-
+    await ctx.send("🎰 Opening Spin game...")
     try:
         browser = get_browser()
         browser.get(link)
         time.sleep(8)
-
         clicked = False
         for btn in browser.find_elements(By.XPATH, "//button"):
             text = btn.text.lower()
-            if any(word in text for word in ["spin", "start", "play", "go", "try again"]):
+            if any(w in text for w in ["spin", "play", "start", "go", "try"]):
                 btn.click()
+                await ctx.send(f"✅ Clicked '{btn.text}' in Spin game!")
                 clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}' in Spin Game!")
                 time.sleep(2)
-
         if not clicked:
-            await ctx.send("⚠️ No Spin actions found.")
-
+            await ctx.send("⚠️ No Spin buttons found.")
         browser.quit()
-
     except Exception as e:
-        await ctx.send(f"❌ Spin error: {e}")
+        await ctx.send(f"❌ Spin game error: {e}")
 
-# === !gifts ===
 @bot.command()
 async def gifts(ctx, link: str):
-    print("🎁 Automating 5-Gift Game")
-    await ctx.send("🎁 Visiting your 5-Gift Game...")
-
+    await ctx.send("🎁 Opening 5-Gift game...")
     try:
         browser = get_browser()
         browser.get(link)
         time.sleep(8)
-
         clicked = False
         for btn in browser.find_elements(By.XPATH, "//button"):
             text = btn.text.lower()
-            if any(word in text for word in ["open", "pack", "accept", "choose", "claim"]):
+            if any(w in text for w in ["open", "pack", "accept", "choose", "claim"]):
                 btn.click()
-                clicked = True
                 await ctx.send(f"✅ Clicked '{btn.text}' in 5-Gift Game!")
+                clicked = True
                 time.sleep(2)
-
         if not clicked:
-            await ctx.send("⚠️ No 5-Gift actions found.")
-
+            await ctx.send("⚠️ No 5-Gift buttons found.")
         browser.quit()
-
     except Exception as e:
-        await ctx.send(f"❌ Gift error: {e}")
+        await ctx.send(f"❌ 5-Gift game error: {e}")
+
+# === SHEIN Command ===
+@bot.command()
+async def shein_claim(ctx, link: str):
+    await ctx.send("🛍️ Visiting your SHEIN link...")
+    try:
+        browser = get_browser()
+        browser.get(link)
+        time.sleep(6)
+        try:
+            btn = browser.find_element(By.XPATH, "//button[contains(text(), 'Accept') or contains(text(), 'Join') or contains(text(), 'Claim') or contains(text(), 'Open')]")
+            btn.click()
+            await ctx.send("✅ SHEIN link clicked successfully!")
+        except:
+            await ctx.send("⚠️ Couldn’t find a clickable button, but page was opened.")
+        browser.quit()
+    except Exception as e:
+        await ctx.send(f"❌ SHEIN error: {e}")
 
 # === Bot Ready ===
 @bot.event
 async def on_ready():
     print(f"🤖 Bot online as {bot.user}")
-    print("✅ Ready for Temu games: claim, farm, fish, stack, spin, gifts!")
-
+    print("✅ Ready for Temu and SHEIN commands!")
