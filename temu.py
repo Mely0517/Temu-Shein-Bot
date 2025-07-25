@@ -1,17 +1,15 @@
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 import asyncio
 import time
 import os
 
-# ----------- Helper: Get headless browser configured for Render -----------
-
+# Helper: Get headless browser for Render
 def get_browser():
     options = uc.ChromeOptions()
-    # Adjust this path if needed based on your environment
-    options.binary_location = "/usr/bin/google-chrome"  # Render’s Chrome path
+    options.binary_location = "/usr/bin/google-chrome"  # Render Chrome path
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
@@ -20,30 +18,76 @@ def get_browser():
     options.add_argument("user-agent=Mozilla/5.0")
     return uc.Chrome(options=options)
 
-# ---------------- Discord bot setup ----------------
-
+# Discord bot setup
 intents = discord.Intents.default()
-intents.message_content = True  # Required for commands to work on latest discord.py versions
+intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ----------- Game loops tracking -----------
-
+# Track active auto loops per game
 game_loops = {
     "farm": False,
     "fish": False,
     "stack": False,
     "spin": False,
     "gift": False,
+    "shein5": False,
+    "shein10": False,
 }
 
 loop_tasks = {}
 
-# ----------- Core commands -------------
+# --- Temu Game Commands ---
+
+async def play_generic_game(ctx, link: str, keywords: list, game_name: str):
+    await ctx.send(f"🎮 Starting {game_name}...")
+    try:
+        browser = get_browser()
+        browser.get(link)
+        await asyncio.sleep(8)
+        buttons = browser.find_elements(By.TAG_NAME, "button")
+        clicked = False
+        for btn in buttons:
+            text = btn.text.lower()
+            if any(keyword in text for keyword in keywords):
+                btn.click()
+                clicked = True
+                await ctx.send(f"✅ Clicked '{btn.text}'")
+                await asyncio.sleep(2)
+        if not clicked:
+            await ctx.send(f"⚠️ No action buttons found or already done in {game_name}.")
+        browser.quit()
+    except Exception as e:
+        await ctx.send(f"❌ {game_name} error: {e}")
 
 @bot.command()
-@commands.cooldown(1, 10, commands.BucketType.user)  # 10 seconds cooldown per user
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def farm(ctx, link: str):
+    await play_generic_game(ctx, link, ["water", "harvest", "grow", "start"], "Farmland")
+
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def fish(ctx, link: str):
+    await play_generic_game(ctx, link, ["fish", "catch"], "Fishland")
+
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def stack(ctx, link: str):
+    await play_generic_game(ctx, link, ["stack", "tap"], "Stack")
+
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def spin(ctx, link: str):
+    await play_generic_game(ctx, link, ["spin", "start"], "Spin")
+
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def gift(ctx, link: str):
+    await play_generic_game(ctx, link, ["gift", "claim"], "5-Gift Game")
+
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
 async def claim(ctx, link: str):
-    """Claim a Temu invite link"""
+    """Claim Temu invite link"""
     await ctx.send("🚀 Opening Temu invite link...")
     try:
         browser = get_browser()
@@ -59,133 +103,12 @@ async def claim(ctx, link: str):
     except Exception as e:
         await ctx.send(f"❌ Temu error: {e}")
 
-@bot.command()
-@commands.cooldown(1, 10, commands.BucketType.user)
-async def farm(ctx, link: str):
-    """Play Temu Farmland game once"""
-    await ctx.send("🌾 Starting Farmland...")
-    try:
-        browser = get_browser()
-        browser.get(link)
-        await asyncio.sleep(8)
-        buttons = browser.find_elements(By.TAG_NAME, "button")
-        clicked = False
-        for btn in buttons:
-            text = btn.text.lower()
-            if any(word in text for word in ["water", "harvest", "grow", "start"]):
-                btn.click()
-                clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}'")
-                await asyncio.sleep(2)
-        if not clicked:
-            await ctx.send("⚠️ No action buttons found or already done.")
-        browser.quit()
-    except Exception as e:
-        await ctx.send(f"❌ Farmland error: {e}")
-
-@bot.command()
-@commands.cooldown(1, 10, commands.BucketType.user)
-async def fish(ctx, link: str):
-    """Play Temu Fishland game once"""
-    await ctx.send("🐟 Starting Fishland...")
-    try:
-        browser = get_browser()
-        browser.get(link)
-        await asyncio.sleep(8)
-        # Example fish game clicks - adjust XPath as needed for actual Fishland UI
-        buttons = browser.find_elements(By.TAG_NAME, "button")
-        clicked = False
-        for btn in buttons:
-            text = btn.text.lower()
-            if "fish" in text or "catch" in text:
-                btn.click()
-                clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}'")
-                await asyncio.sleep(2)
-        if not clicked:
-            await ctx.send("⚠️ No fishing buttons found or already done.")
-        browser.quit()
-    except Exception as e:
-        await ctx.send(f"❌ Fishland error: {e}")
-
-@bot.command()
-@commands.cooldown(1, 10, commands.BucketType.user)
-async def stack(ctx, link: str):
-    """Play Temu Stack game once"""
-    await ctx.send("🧱 Starting Stack...")
-    try:
-        browser = get_browser()
-        browser.get(link)
-        await asyncio.sleep(8)
-        # Example Stack clicks - adjust XPath as needed
-        buttons = browser.find_elements(By.TAG_NAME, "button")
-        clicked = False
-        for btn in buttons:
-            text = btn.text.lower()
-            if "stack" in text or "tap" in text:
-                btn.click()
-                clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}'")
-                await asyncio.sleep(2)
-        if not clicked:
-            await ctx.send("⚠️ No stack buttons found or already done.")
-        browser.quit()
-    except Exception as e:
-        await ctx.send(f"❌ Stack error: {e}")
-
-@bot.command()
-@commands.cooldown(1, 10, commands.BucketType.user)
-async def spin(ctx, link: str):
-    """Play Temu Spin game once"""
-    await ctx.send("🎡 Starting Spin...")
-    try:
-        browser = get_browser()
-        browser.get(link)
-        await asyncio.sleep(8)
-        buttons = browser.find_elements(By.TAG_NAME, "button")
-        clicked = False
-        for btn in buttons:
-            text = btn.text.lower()
-            if "spin" in text or "start" in text:
-                btn.click()
-                clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}'")
-                await asyncio.sleep(2)
-        if not clicked:
-            await ctx.send("⚠️ No spin buttons found or already done.")
-        browser.quit()
-    except Exception as e:
-        await ctx.send(f"❌ Spin error: {e}")
-
-@bot.command()
-@commands.cooldown(1, 10, commands.BucketType.user)
-async def gift(ctx, link: str):
-    """Play Temu 5-Gift game once"""
-    await ctx.send("🎁 Starting 5-Gift game...")
-    try:
-        browser = get_browser()
-        browser.get(link)
-        await asyncio.sleep(8)
-        # Example gift clicks - adjust XPath as needed
-        buttons = browser.find_elements(By.TAG_NAME, "button")
-        clicked = False
-        for btn in buttons:
-            text = btn.text.lower()
-            if "gift" in text or "claim" in text:
-                btn.click()
-                clicked = True
-                await ctx.send(f"✅ Clicked '{btn.text}'")
-                await asyncio.sleep(2)
-        if not clicked:
-            await ctx.send("⚠️ No gift buttons found or already done.")
-        browser.quit()
-    except Exception as e:
-        await ctx.send(f"❌ 5-Gift error: {e}")
+# --- SHEIN Commands ---
 
 @bot.command()
 @commands.cooldown(1, 10, commands.BucketType.user)
 async def shein_claim(ctx, link: str):
-    """Claim SHEIN invite or gift link"""
+    """Claim SHEIN invite or 5 free items"""
     await ctx.send("🎉 Starting SHEIN claim...")
     try:
         browser = get_browser()
@@ -201,13 +124,37 @@ async def shein_claim(ctx, link: str):
     except Exception as e:
         await ctx.send(f"❌ SHEIN error: {e}")
 
-# ----------- Auto-loop background tasks -----------
+@bot.command()
+@commands.cooldown(1, 10, commands.BucketType.user)
+async def shein_10free(ctx, link: str):
+    """Claim SHEIN 10 Free Items"""
+    await ctx.send("🎊 Starting SHEIN 10 Free Items claim...")
+    try:
+        browser = get_browser()
+        browser.get(link)
+        await asyncio.sleep(6)
+        # Try multiple clicks & steps for 10 free items
+        try:
+            # Customize for 10 free items flow - adjust as needed
+            buttons = browser.find_elements(By.TAG_NAME, "button")
+            for btn in buttons:
+                text = btn.text.lower()
+                if "claim" in text or "receive" in text or "confirm" in text:
+                    btn.click()
+                    await asyncio.sleep(2)
+            await ctx.send("✅ Attempted 10 Free Items claim!")
+        except Exception:
+            await ctx.send("⚠️ Some buttons may be missing, but page was processed.")
+        browser.quit()
+    except Exception as e:
+        await ctx.send(f"❌ SHEIN 10 Free Items error: {e}")
+
+# --- Auto-loop ---
 
 async def auto_loop(ctx, game: str, link: str, interval=300):
     await ctx.send(f"⏲️ Auto-loop started for {game} every {interval} seconds.")
     try:
         while game_loops[game]:
-            # Call the matching command function
             if game == "farm":
                 await farm(ctx, link)
             elif game == "fish":
@@ -218,6 +165,10 @@ async def auto_loop(ctx, game: str, link: str, interval=300):
                 await spin(ctx, link)
             elif game == "gift":
                 await gift(ctx, link)
+            elif game == "shein_claim":
+                await shein_claim(ctx, link)
+            elif game == "shein_10free":
+                await shein_10free(ctx, link)
             else:
                 await ctx.send(f"⚠️ Unknown game: {game}")
                 break
@@ -229,10 +180,9 @@ async def auto_loop(ctx, game: str, link: str, interval=300):
 
 @bot.command()
 async def start(ctx, game: str, link: str, interval: int = 300):
-    """Start auto-loop for a game every [interval] seconds"""
     game = game.lower()
     if game not in game_loops:
-        await ctx.send("❌ Invalid game name. Use farm, fish, stack, spin, gift.")
+        await ctx.send("❌ Invalid game name. Use farm, fish, stack, spin, gift, shein_claim, shein_10free.")
         return
     if game_loops[game]:
         await ctx.send(f"⚠️ Auto-loop for {game} already running.")
@@ -244,7 +194,6 @@ async def start(ctx, game: str, link: str, interval: int = 300):
 
 @bot.command()
 async def stop(ctx, game: str):
-    """Stop auto-loop for a game"""
     game = game.lower()
     if game not in game_loops or not game_loops[game]:
         await ctx.send(f"⚠️ No running auto-loop for {game}.")
@@ -255,17 +204,18 @@ async def stop(ctx, game: str):
         task.cancel()
     await ctx.send(f"🛑 Auto-loop stopped for {game}.")
 
-# ----------- On Ready -----------
+# --- On Ready ---
 
 @bot.event
 async def on_ready():
     print(f"🤖 Bot online as {bot.user}")
-    print("✅ Ready to accept commands for Temu & SHEIN games!")
+    print("✅ Ready for Temu & SHEIN commands!")
 
-# ----------- Run bot -----------
+# --- Run bot ---
 
 if __name__ == "__main__":
     TOKEN = os.getenv("DISCORD_TOKEN")
     if not TOKEN:
-        print("❌ ERROR: DISCORD_TOKEN env var not set.")
-        exit
+        print("❌ ERROR: DISCORD_TOKEN environment variable not set.")
+        exit(1)
+    bot.run(TOKEN)
