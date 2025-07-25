@@ -10,10 +10,10 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# === Shared Browser Function ===
+# === Headless Browser Setup ===
 def get_browser():
     options = uc.ChromeOptions()
-    options.binary_location = "/usr/bin/google-chrome"
+    options.binary_location = "/opt/render/project/.render/chrome/opt/google/chrome"  # Chrome path for Render
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
@@ -22,7 +22,7 @@ def get_browser():
     options.add_argument("user-agent=Mozilla/5.0")
     return uc.Chrome(options=options)
 
-# === Temu Commands ===
+# === TEMU Commands ===
 @bot.command()
 async def claim(ctx, link: str):
     await ctx.send("🚀 Visiting your Temu link...")
@@ -42,7 +42,7 @@ async def claim(ctx, link: str):
 
 @bot.command()
 async def farm(ctx, link: str):
-    await ctx.send("🌾 Opening Farmland...")
+    await ctx.send("🌾 Loading Temu Farmland...")
     try:
         browser = get_browser()
         browser.get(link)
@@ -56,14 +56,14 @@ async def farm(ctx, link: str):
                 clicked = True
                 time.sleep(2)
         if not clicked:
-            await ctx.send("⚠️ No buttons found.")
+            await ctx.send("⚠️ No Farmland buttons found.")
         browser.quit()
     except Exception as e:
         await ctx.send(f"❌ Farmland error: {e}")
 
 @bot.command()
 async def fish(ctx, link: str):
-    await ctx.send("🐟 Opening Fishland...")
+    await ctx.send("🐟 Loading Temu Fishland...")
     try:
         browser = get_browser()
         browser.get(link)
@@ -84,7 +84,7 @@ async def fish(ctx, link: str):
 
 @bot.command()
 async def stack(ctx, link: str):
-    await ctx.send("🧱 Opening Stack game...")
+    await ctx.send("🧱 Loading Temu Stack game...")
     try:
         browser = get_browser()
         browser.get(link)
@@ -105,7 +105,7 @@ async def stack(ctx, link: str):
 
 @bot.command()
 async def spin(ctx, link: str):
-    await ctx.send("🎰 Opening Spin game...")
+    await ctx.send("🎰 Loading Temu Spin game...")
     try:
         browser = get_browser()
         browser.get(link)
@@ -126,7 +126,7 @@ async def spin(ctx, link: str):
 
 @bot.command()
 async def gifts(ctx, link: str):
-    await ctx.send("🎁 Opening 5-Gift game...")
+    await ctx.send("🎁 Loading Temu 5-Gift game...")
     try:
         browser = get_browser()
         browser.get(link)
@@ -163,8 +163,8 @@ async def shein_claim(ctx, link: str):
     except Exception as e:
         await ctx.send(f"❌ SHEIN error: {e}")
 
-# === Bot Ready ===
+# === On Ready ===
 @bot.event
 async def on_ready():
     print(f"🤖 Bot online as {bot.user}")
-    print("✅ Ready for Temu and SHEIN commands!")
+    print("✅ Ready to accept Temu & SHEIN links!")
