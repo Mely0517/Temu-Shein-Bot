@@ -1,3 +1,5 @@
+FROM python:3.11-slim
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
@@ -33,4 +35,14 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY . .
+
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install --root-user-action=ignore -r requirements.txt
+
+CMD ["python", "main.py"]
+
 
