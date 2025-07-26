@@ -1,3 +1,9 @@
-# main.py
+from temu import setup_bot
+from discord.ext import commands
+import os
 
-import temu  # This will run all the bot logic
+bot = commands.Bot(command_prefix="!")
+
+setup_bot(bot)
+
+bot.run(os.getenv("DISCORD_TOKEN"))
