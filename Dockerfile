@@ -1,33 +1,45 @@
-# Use a slim official Python image
-FROM python:3.10-slim
+FROM python:3.11-slim
 
-# Set environment variables
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Install system dependencies
+# Install Chrome dependencies
 RUN apt-get update && apt-get install -y \
-    curl unzip gnupg \
-    chromium \
-    chromium-driver \
-    fonts-liberation libappindicator3-1 libasound2 libatk-bridge2.0-0 \
-    libatk1.0-0 libcups2 libdbus-1-3 libgdk-pixbuf2.0-0 \
-    libnspr4 libnss3 libx11-xcb1 libxcomposite1 \
-    libxdamage1 libxrandr2 xdg-utils wget \
-    --no-install-recommends && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    wget \
+    unzip \
+    curl \
+    fonts-liberation \
+    libasound2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libgbm1 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    xdg-utils \
+    libu2f-udev \
+    libvulkan1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Install Google Chrome stable
+RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+RUN apt-get install -y ./google-chrome-stable_current_amd64.deb
+RUN rm google-chrome-stable_current_amd64.deb
+
+# Set workdir
 WORKDIR /app
 
-# Copy code
-COPY . .
-
-# Install Python dependencies
-RUN pip install --upgrade pip
+# Copy files
+COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Set default command
-CMD ["python", "main.py"]
+COPY . .
 
+# Environment variables (optional default)
+ENV DISCORD_TOKEN=""
+ENV AUTO_SHARE_CHANNEL_ID=""
+
+CMD ["python", "main.py"]
