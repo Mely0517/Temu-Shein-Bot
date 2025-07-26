@@ -13,7 +13,7 @@ import aiohttp
 
 def get_browser():
     options = uc.ChromeOptions()
-    options.binary_location = "/usr/bin/google-chrome"
+    options.binary_location = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
@@ -21,6 +21,7 @@ def get_browser():
     options.add_argument("--window-size=1920,1080")
     options.add_argument("user-agent=Mozilla/5.0")
     return uc.Chrome(options=options)
+
 
 # ---------------- Discord bot setup ----------------
 
