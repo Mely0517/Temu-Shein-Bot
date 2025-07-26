@@ -1,160 +1,148 @@
-# temu.py
-
 import discord
 from discord.ext import commands, tasks
+import os
+import re
+import time
+import json
+import random
+import asyncio
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
-import asyncio
-import os
-import json
-import re
 
-# ---------- CONFIG ----------
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+shared_links = []
+item_tracker = []
 
-STATS_FILE = "stats.json"
-REFERRAL_LINKS = {
-    "temu": "https://temu.com/s/your-temu-ref",
-    "shein": "https://onelink.shein.com/15/your-shein-ref"
-}
-AUTO_SHARE_CHANNEL_ID = 123456789012345678  # Replace with your actual Discord channel ID
-
-# Tracks active game loops
-game_loops = {"farm": False, "fish": False, "stack": False, "spin": False, "gift": False}
-loop_tasks = {}
-auto_sharing = False
-
-# ---------- BROWSER SETUP ----------
-
+# === Headless Chrome Setup for Render ===
 def get_browser():
     options = uc.ChromeOptions()
     options.binary_location = "/usr/bin/google-chrome"
     options.add_argument("--headless=new")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--window-size=1920,1080")
-    options.add_argument("user-agent=Mozilla/5.0")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-blink-features=AutomationControlled")
     return uc.Chrome(options=options)
 
-# ---------- STATS ----------
-
-def load_stats():
-    if os.path.exists(STATS_FILE):
-        with open(STATS_FILE) as f:
-            return json.load(f)
-    return {}
-
-def save_stats(stats):
-    with open(STATS_FILE, "w") as f:
-        json.dump(stats, f, indent=2)
-
-def increment_stat(link_type):
-    stats = load_stats()
-    stats[link_type] = stats.get(link_type, 0) + 1
-    save_stats(stats)
-
-# ---------- CORE CLAIM FUNCTION ----------
-
-async def claim_link(link, user=None, channel=None):
-    browser = None
+# === Button Clicker ===
+def click_buttons(driver, keywords):
     try:
-        browser = get_browser()
-        browser.get(link)
-        await asyncio.sleep(5)
+        buttons = driver.find_elements(By.TAG_NAME, "button")
+        for btn in buttons:
+            if any(kw.lower() in btn.text.lower() for kw in keywords):
+                btn.click()
+                time.sleep(2)
+                return True
+    except Exception:
+        pass
+    return False
 
-        # Try clicking any available claim buttons
-        buttons = browser.find_elements(By.TAG_NAME, "button")
-        clicked = False
-        for button in buttons:
-            text = button.text.lower()
-            if any(keyword in text for keyword in ["receive", "claim", "accept", "help", "invite", "free", "join"]):
-                button.click()
-                clicked = True
-                break
+# === Auto-play Handler ===
+def auto_play_game(link):
+    try:
+        driver = get_browser()
+        driver.get(link)
+        time.sleep(3)
 
-        if clicked:
-            increment_stat("shein" if "shein.com" in link else "temu")
-            if user:
-                await user.send(f"✅ Link claimed: {link}")
-            elif channel:
-                await channel.send(f"✅ Link claimed: {link}")
+        if "temu.com" in link:
+            game_type = detect_temu_game(link)
+        elif "shein.com" in link:
+            game_type = detect_shein_game(link)
         else:
-            if user:
-                await user.send(f"⚠️ Couldn’t find a button, but page opened.")
-            elif channel:
-                await channel.send(f"⚠️ Couldn’t find a button, but page opened.")
+            driver.quit()
+            return "❌ Unsupported link"
+
+        success = False
+        for i in range(5):
+            if click_buttons(driver, ["Go", "Play", "Invite", "Collect", "Get"]):
+                success = True
+            time.sleep(random.uniform(1.5, 3.5))
+
+        title = driver.title
+        item_tracker.append({"link": link, "title": title, "type": game_type})
+        driver.quit()
+
+        if success:
+            return f"✅ Played {game_type} | {title}"
+        else:
+            return f"⚠️ Couldn’t find a button, but page opened."
 
     except Exception as e:
-        msg = f"❌ Error claiming link:\n```\n{str(e)}\n```"
-        if user:
-            await user.send(msg)
-        elif channel:
-            await channel.send(msg)
-    finally:
-        if browser:
-            browser.quit()
+        return f"❌ Error: {str(e)}"
 
-# ---------- LINK DETECTION ----------
+# === Game Detectors ===
+def detect_temu_game(link):
+    if "fish" in link:
+        return "Fishland"
+    if "farm" in link:
+        return "Farm"
+    if "stack" in link:
+        return "Stack"
+    if "spin" in link:
+        return "Spin"
+    if "gift" in link:
+        return "5-Gift Game"
+    return "Temu Game"
 
-def detect_game_type(url):
-    if "temu.com" in url:
-        if "fishland" in url: return "fish"
-        if "farm" in url: return "farm"
-        if "stack" in url: return "stack"
-        if "spin" in url: return "spin"
-        if "gift" in url: return "gift"
-        return "temu"
-    elif "shein.com" in url:
-        return "shein"
-    return None
+def detect_shein_game(link):
+    if "10 free items" in link or "4vv" in link:
+        return "10 Free Items"
+    if "50" in link:
+        return "$50 Off Game"
+    if "freebie" in link or "gift" in link:
+        return "Free Gift Grab"
+    if "1000" in link:
+        return "$1000 Prize"
+    return "SHEIN Game"
 
-# ---------- DISCORD SETUP ----------
+# === Core Command: !claim <link> ===
+@bot.command()
+async def claim(ctx, link: str):
+    await ctx.send("🔄 Processing link...")
+    result = auto_play_game(link)
+    await ctx.send(result)
 
-intents = discord.Intents.default()
-intents.messages = True
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+# === Game Shortcuts ===
+@bot.command()
+async def farm(ctx): await claim(ctx, "https://temu.com/s/farm-invite-link")
+@bot.command()
+async def fish(ctx): await claim(ctx, "https://temu.com/s/fishland-invite-link")
+@bot.command()
+async def stack(ctx): await claim(ctx, "https://temu.com/s/stack-invite-link")
+@bot.command()
+async def spin(ctx): await claim(ctx, "https://temu.com/s/spin-invite-link")
+@bot.command()
+async def gift(ctx): await claim(ctx, "https://temu.com/s/5-gift-invite-link")
 
-@bot.event
-async def on_ready():
-    print(f"✅ Bot is online as {bot.user}")
+# === Add SHEIN shortcut examples (optional links) ===
+@bot.command()
+async def shein(ctx): await claim(ctx, "https://onelink.shein.com/15/your-shein-game-link")
 
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
+# === Track Claimed Items ===
+@bot.command()
+async def myitems(ctx):
+    if not item_tracker:
+        await ctx.send("🪣 No items claimed yet.")
+    else:
+        msg = "\n".join([f"{item['type']} - {item['title']}" for item in item_tracker[-10:]])
+        await ctx.send(f"📦 Recent claimed:\n{msg}")
 
-    # Auto-detect links in messages
-    links = re.findall(r'(https?://\S+)', message.content)
-    for link in links:
-        if "temu.com" in link or "shein.com" in link:
-            await claim_link(link, user=message.author)
-    await bot.process_commands(message)
-
-# ---------- GAME COMMANDS ----------
+# === Smart Auto-Looping ===
+@tasks.loop(minutes=30)
+async def auto_loop():
+    if shared_links:
+        for link in shared_links:
+            result = auto_play_game(link)
+            print(result)
 
 @bot.command()
-async def farm(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
-@bot.command()
-async def fish(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
-@bot.command()
-async def stack(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
-@bot.command()
-async def spin(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
-@bot.command()
-async def gift(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
-@bot.command()
-async def shein(ctx): await claim_link(REFERRAL_LINKS["shein"], ctx.author)
+async def addlink(ctx, link: str):
+    shared_links.append(link)
+    await ctx.send("✅ Link added to auto-play list.")
 
 @bot.command()
-async def stats(ctx):
-    stats = load_stats()
-    await ctx.send(f"📊 Stats:\n" + "\n".join(f"{k}: {v}" for k, v in stats.items()))
+async def loop(ctx):
+    auto_loop.start()
+    await ctx.send("🔁 Auto-loop started every 30 minutes.")
 
-# ---------- START BOT ----------
-
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    load_dotenv()
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    bot.run(TOKEN)
+def setup_bot():
+    return bot
