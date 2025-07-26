@@ -1,7 +1,3 @@
-import os
-from temu import bot
+# main.py
 
-TOKEN = os.getenv("DISCORD_TOKEN")
-
-if __name__ == "__main__":
-    bot.run(TOKEN)
+import temu  # This will run all the bot logic
