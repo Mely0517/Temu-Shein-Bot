@@ -1,4 +1,30 @@
-.env
+# Ignore Python cache
 __pycache__/
-*.pyc
-chromedriver.log
+*.py[cod]
+*.pyo
+
+# Ignore virtual environments
+venv/
+env/
+ENV/
+
+# Ignore logs and temp files
+*.log
+*.tmp
+
+# Ignore your stats and token files
+.env
+stats.json
+
+# Ignore browser profiles or selenium temp data
+selenium-profile/
+profile/
+userdata/
+
+# VSCode or PyCharm settings (if you use them)
+.vscode/
+.idea/
+
+# Ignore macOS files
+.DS_Store
+
