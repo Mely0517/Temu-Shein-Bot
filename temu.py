@@ -187,23 +187,52 @@ def setup_bot(bot):
 
     # --- SHEIN 10 Free Items ---
     @bot.command()
-    async def shein_10free(ctx, link: str):
-        await ctx.send("🎊 Starting SHEIN 10 Free Items claim...")
-        try:
-            browser = get_browser()
-            browser.get(link)
-            await asyncio.sleep(8)
+    async def claim_shein(link):
+    print("🎊 Starting SHEIN 10 Free Items claim...")
+    try:
+        browser = get_browser()
+        browser.get(link)
+        await asyncio.sleep(8)  # Wait for the page to fully load
+
+        # Scroll down a bit to trigger any lazy-load buttons
+        browser.execute_script("window.scrollTo(0, document.body.scrollHeight / 2);")
+        await asyncio.sleep(2)
+
+        # Try common buttons
+        button_selectors = [
+            "//button[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'claim')]",
+            "//button[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'receive')]",
+            "//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'join')]",
+            "//a[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'get')]",
+            "//div[contains(@class, 'btn')]",
+            "//button",
+        ]
+
+        found = False
+        for selector in button_selectors:
             try:
-                btn = browser.find_element(By.XPATH, "//button[contains(text(), 'Claim') or contains(text(), 'Get')]")
-                btn.click()
-                await ctx.send("✅ Clicked 10 Free Items claim button!")
-                record_stat(ctx.author.id, "shein")
-                await ctx.author.send("🎉 Claimed SHEIN 10 Free Items!")
-            except:
-                await ctx.send("⚠️ Claim button not found.")
-            browser.quit()
-        except Exception as e:
-            await ctx.send(f"❌ SHEIN 10 Free Items error: {e}")
+                button = browser.find_element(By.XPATH, selector)
+                if button and button.is_displayed():
+                    button.click()
+                    await asyncio.sleep(3)
+                    print("✅ Clicked a button on SHEIN page.")
+                    found = True
+                    break
+            except Exception:
+                continue
+
+        browser.quit()
+
+        if found:
+            return "✅ Claimed SHEIN reward successfully!"
+        else:
+            return "⚠️ Couldn’t find a button, but page opened."
+
+    except Exception as e:
+        print("❌ SHEIN error:\n---------------------")
+        print(str(e))
+        return f"❌ SHEIN error:\n---------------------\n{str(e)}"
+
 
     # --- Auto-Loop Game Logic ---
     async def auto_loop(ctx, game, link, interval):
