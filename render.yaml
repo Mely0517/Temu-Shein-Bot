@@ -1,14 +1,10 @@
 services:
-  - type: web
+  - type: worker
     name: temu-shein-bot
     env: python
-    plan: free
-    env_vars:
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
       - key: DISCORD_TOKEN
-        from_env: DISCORD_TOKEN
-      - key: AUTO_SHARE_CHANNEL_ID
-        from_env: AUTO_SHARE_CHANNEL_ID
-    build_command: pip install -r requirements.txt
-    start_command: python main.py
-    health_check_path: /
-    auto_deploy: true
+        sync: true
+
