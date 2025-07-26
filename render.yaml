@@ -7,5 +7,3 @@ services:
     envVars:
       - key: DISCORD_TOKEN
         sync: true
-
-
