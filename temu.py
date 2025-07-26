@@ -1,3 +1,5 @@
+# temu.py
+
 import discord
 from discord.ext import commands, tasks
 import undetected_chromedriver as uc
@@ -7,23 +9,22 @@ import os
 import json
 import re
 
-TOKEN = os.getenv("DISCORD_TOKEN")
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
-
-REFERRAL_LINKS = {
-    "temu": "https://temu.com/s/your-code",
-    "shein": "https://onelink.shein.com/15/your-code"
-}
+# ---------- CONFIG ----------
 
 STATS_FILE = "stats.json"
-AUTO_SHARE_CHANNEL_ID = 123456789012345678  # Replace with your real channel ID
+REFERRAL_LINKS = {
+    "temu": "https://temu.com/s/your-temu-ref",
+    "shein": "https://onelink.shein.com/15/your-shein-ref"
+}
+AUTO_SHARE_CHANNEL_ID = 123456789012345678  # Replace with your actual Discord channel ID
+
+# Tracks active game loops
 game_loops = {"farm": False, "fish": False, "stack": False, "spin": False, "gift": False}
 loop_tasks = {}
 auto_sharing = False
 
-# --- Browser Setup for Render ---
+# ---------- BROWSER SETUP ----------
+
 def get_browser():
     options = uc.ChromeOptions()
     options.binary_location = "/usr/bin/google-chrome"
@@ -35,141 +36,125 @@ def get_browser():
     options.add_argument("user-agent=Mozilla/5.0")
     return uc.Chrome(options=options)
 
-# --- Helpers ---
+# ---------- STATS ----------
+
 def load_stats():
-    if not os.path.exists(STATS_FILE):
-        return {}
-    with open(STATS_FILE, "r") as f:
-        return json.load(f)
+    if os.path.exists(STATS_FILE):
+        with open(STATS_FILE) as f:
+            return json.load(f)
+    return {}
 
-def save_stats(data):
+def save_stats(stats):
     with open(STATS_FILE, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(stats, f, indent=2)
 
-def increment_stat(stat):
+def increment_stat(link_type):
     stats = load_stats()
-    stats[stat] = stats.get(stat, 0) + 1
+    stats[link_type] = stats.get(link_type, 0) + 1
     save_stats(stats)
 
-async def claim_game(link, ctx):
+# ---------- CORE CLAIM FUNCTION ----------
+
+async def claim_link(link, user=None, channel=None):
+    browser = None
     try:
         browser = get_browser()
         browser.get(link)
-        await asyncio.sleep(8)
-        try:
-            button = browser.find_element(By.TAG_NAME, "button")
-            button.click()
-            await asyncio.sleep(2)
-            await ctx.send("🎉 Button clicked successfully!")
-        except Exception:
-            await ctx.send("⚠️ Couldn’t find a button, but page opened.")
-        browser.quit()
-        increment_stat("claims")
+        await asyncio.sleep(5)
+
+        # Try clicking any available claim buttons
+        buttons = browser.find_elements(By.TAG_NAME, "button")
+        clicked = False
+        for button in buttons:
+            text = button.text.lower()
+            if any(keyword in text for keyword in ["receive", "claim", "accept", "help", "invite", "free", "join"]):
+                button.click()
+                clicked = True
+                break
+
+        if clicked:
+            increment_stat("shein" if "shein.com" in link else "temu")
+            if user:
+                await user.send(f"✅ Link claimed: {link}")
+            elif channel:
+                await channel.send(f"✅ Link claimed: {link}")
+        else:
+            if user:
+                await user.send(f"⚠️ Couldn’t find a button, but page opened.")
+            elif channel:
+                await channel.send(f"⚠️ Couldn’t find a button, but page opened.")
+
     except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
+        msg = f"❌ Error claiming link:\n```\n{str(e)}\n```"
+        if user:
+            await user.send(msg)
+        elif channel:
+            await channel.send(msg)
+    finally:
+        if browser:
+            browser.quit()
 
-def detect_game_type(link):
-    if "temu" in link:
-        if "spin" in link: return "spin"
-        if "stack" in link: return "stack"
-        if "fish" in link: return "fish"
-        if "farm" in link: return "farm"
-        if "gift" in link: return "gift"
+# ---------- LINK DETECTION ----------
+
+def detect_game_type(url):
+    if "temu.com" in url:
+        if "fishland" in url: return "fish"
+        if "farm" in url: return "farm"
+        if "stack" in url: return "stack"
+        if "spin" in url: return "spin"
+        if "gift" in url: return "gift"
         return "temu"
-    elif "shein" in link:
+    elif "shein.com" in url:
         return "shein"
-    return "unknown"
+    return None
 
-# --- Discord Commands ---
+# ---------- DISCORD SETUP ----------
+
+intents = discord.Intents.default()
+intents.messages = True
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
 @bot.event
 async def on_ready():
-    print(f"✅ Bot is ready. Logged in as {bot.user}")
-    if AUTO_SHARE_CHANNEL_ID and auto_sharing:
-        share_links.start()
+    print(f"✅ Bot is online as {bot.user}")
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
-    match = re.search(r'(https?://[^\s]+)', message.content)
-    if match:
-        link = match.group(1)
-        game_type = detect_game_type(link)
-        await message.channel.send(f"🎮 Detected {game_type} link... claiming!")
-        await claim_game(link, message.channel)
+
+    # Auto-detect links in messages
+    links = re.findall(r'(https?://\S+)', message.content)
+    for link in links:
+        if "temu.com" in link or "shein.com" in link:
+            await claim_link(link, user=message.author)
     await bot.process_commands(message)
 
-@bot.command()
-async def farm(ctx):
-    await loop_or_once("farm", ctx)
+# ---------- GAME COMMANDS ----------
 
 @bot.command()
-async def fish(ctx):
-    await loop_or_once("fish", ctx)
-
+async def farm(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
 @bot.command()
-async def stack(ctx):
-    await loop_or_once("stack", ctx)
-
+async def fish(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
 @bot.command()
-async def spin(ctx):
-    await loop_or_once("spin", ctx)
-
+async def stack(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
 @bot.command()
-async def gift(ctx):
-    await loop_or_once("gift", ctx)
-
+async def spin(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
 @bot.command()
-async def shein(ctx):
-    await claim_game(REFERRAL_LINKS["shein"], ctx)
-
+async def gift(ctx): await claim_link(REFERRAL_LINKS["temu"], ctx.author)
 @bot.command()
-async def temu(ctx):
-    await claim_game(REFERRAL_LINKS["temu"], ctx)
+async def shein(ctx): await claim_link(REFERRAL_LINKS["shein"], ctx.author)
 
 @bot.command()
 async def stats(ctx):
     stats = load_stats()
-    msg = "\n".join(f"📊 {k}: {v}" for k, v in stats.items()) or "No data yet."
-    await ctx.send(f"📈 Stats:\n{msg}")
+    await ctx.send(f"📊 Stats:\n" + "\n".join(f"{k}: {v}" for k, v in stats.items()))
 
-@bot.command()
-async def start_share(ctx):
-    global auto_sharing
-    auto_sharing = True
-    share_links.start()
-    await ctx.send("📢 Auto sharing started!")
+# ---------- START BOT ----------
 
-@bot.command()
-async def stop_share(ctx):
-    global auto_sharing
-    auto_sharing = False
-    share_links.stop()
-    await ctx.send("🚫 Auto sharing stopped.")
-
-# --- Loop Helpers ---
-async def loop_or_once(game, ctx):
-    if not game_loops[game]:
-        game_loops[game] = True
-        await ctx.send(f"🔁 Starting {game} auto loop...")
-        async def loop_func():
-            while game_loops[game]:
-                await claim_game(REFERRAL_LINKS["temu"], ctx)
-                await asyncio.sleep(45)
-        loop_tasks[game] = asyncio.create_task(loop_func())
-    else:
-        game_loops[game] = False
-        loop_tasks[game].cancel()
-        await ctx.send(f"⏹️ Stopped {game} loop.")
-
-# --- Auto Share Task ---
-@tasks.loop(minutes=60)
-async def share_links():
-    channel = bot.get_channel(AUTO_SHARE_CHANNEL_ID)
-    if channel:
-        await channel.send(f"🥳 10 free items from SHEIN await — don’t miss out!\n{REFERRAL_LINKS['shein']}")
-        await channel.send(f"🎁 Temu prize game link:\n{REFERRAL_LINKS['temu']}")
-        increment_stat("shared")
-
-
-
+if __name__ == "__main__":
+    from dotenv import load_dotenv
+    load_dotenv()
+    TOKEN = os.getenv("DISCORD_TOKEN")
+    bot.run(TOKEN)
