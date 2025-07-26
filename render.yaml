@@ -1,12 +1,12 @@
 services:
-  - type: worker
-    name: temu-shein-bot
-    runtime: python
-    buildCommand: |
-      apt-get update
-      apt-get install -y chromium-browser chromium-chromedriver
-      pip install -r requirements.txt
-    startCommand: python main.py
+  - type: background
+    name: temu-bot
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: python temu.py
     envVars:
       - key: DISCORD_TOKEN
-        sync: true
+        fromDatabase: true
+
