@@ -1,3 +1,5 @@
+# === Temu + SHEIN Discord Bot (Full Automation) ===
+
 import discord
 from discord.ext import commands, tasks
 import undetected_chromedriver as uc
@@ -22,7 +24,6 @@ def get_browser():
     options.add_argument("user-agent=Mozilla/5.0")
     return uc.Chrome(options=options)
 
-
 # ---------------- Discord bot setup ----------------
 
 intents = discord.Intents.default()
@@ -30,20 +31,20 @@ intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ----------- Configurable values -----------
+# ----------- Config -----------
 
 REFERRAL_LINKS = {
     "shein": "https://onelink.shein.com/15/4vqj870ifsi6",
     "temu": "https://temu.link/your-referral-code"
 }
-AUTO_SHARE_CHANNEL_ID = 123456789012345678
+AUTO_SHARE_CHANNEL_ID = 123456789012345678  # Replace with your channel ID
 
 STATS_FILE = "stats.json"
 game_loops = {"farm": False, "fish": False, "stack": False, "spin": False, "gift": False}
 loop_tasks = {}
 auto_sharing = False
 
-# ----------- Stats Helpers -----------
+# ----------- Stats -----------
 
 def load_stats():
     if not os.path.exists(STATS_FILE):
@@ -62,7 +63,7 @@ def record_stat(user_id, game_type):
     stats[str(user_id)][game_type] += 1
     save_stats(stats)
 
-# ----------- Chrome Tab Link Fetch (if debugging enabled) -----------
+# ----------- Debug helper for Chrome tab URL -----------
 
 async def get_chrome_tab_url():
     try:
@@ -108,7 +109,7 @@ async def stopsharing(ctx):
     else:
         await ctx.send("⚠️ Auto-sharing not running.")
 
-# ----------- Core Claim Handler -----------
+# ----------- Core Claim Logic -----------
 
 async def run_claim(ctx, link, source):
     await ctx.send(f"🚀 Opening {source.upper()} link...")
@@ -119,8 +120,8 @@ async def run_claim(ctx, link, source):
         try:
             btn = browser.find_element(By.XPATH, "//button[contains(text(), 'Accept') or contains(text(), 'Join') or contains(text(), 'Open') or contains(text(), 'Claim')]")
             btn.click()
-            await ctx.send(f"✅ Successfully clicked {source.upper()} claim button!")
-            await ctx.author.send(f"✅ Your {source.upper()} link was successfully clicked and opened!")
+            await ctx.send(f"✅ Clicked {source.upper()} button!")
+            await ctx.author.send(f"✅ Your {source.upper()} link was successfully clicked!")
             record_stat(ctx.author.id, source)
         except:
             await ctx.send("⚠️ Couldn’t find a button, but page opened.")
@@ -130,7 +131,6 @@ async def run_claim(ctx, link, source):
 
 @bot.command()
 async def claim(ctx, link: str = None):
-    """Auto-detect Temu or SHEIN link and claim"""
     if not link:
         chrome_url = await get_chrome_tab_url()
         if chrome_url:
@@ -143,9 +143,9 @@ async def claim(ctx, link: str = None):
     elif "shein" in link:
         await run_claim(ctx, link, "shein")
     else:
-        await ctx.send("❌ Unknown link type. Please send a Temu or SHEIN link.")
+        await ctx.send("❌ Unknown link type.")
 
-# ----------- Game Commands (Temu Games) -----------
+# ----------- Temu Game Automation -----------
 
 async def run_game(ctx, link, game, keywords):
     await ctx.send(f"🎮 Starting {game.title()}...")
@@ -156,8 +156,7 @@ async def run_game(ctx, link, game, keywords):
         buttons = browser.find_elements(By.TAG_NAME, "button")
         clicked = False
         for btn in buttons:
-            text = btn.text.lower()
-            if any(kw in text for kw in keywords):
+            if any(kw in btn.text.lower() for kw in keywords):
                 btn.click()
                 clicked = True
                 await ctx.send(f"✅ Clicked '{btn.text}'")
@@ -202,7 +201,7 @@ async def shein_10free(ctx, link: str):
     except Exception as e:
         await ctx.send(f"❌ SHEIN 10 Free Items error: {e}")
 
-# ----------- Auto-Loop Game Logic -----------
+# ----------- Auto-Loop Games -------------
 
 async def auto_loop(ctx, game, link, interval):
     await ctx.send(f"🔁 Auto-loop started for {game}.")
@@ -231,7 +230,7 @@ async def stop(ctx, game: str):
         loop_tasks[game].cancel()
         await ctx.send(f"🛑 Auto-loop stopped for {game}.")
 
-# ----------- Stats Commands -----------
+# ----------- Stats -----------
 
 @bot.command()
 async def stats(ctx):
@@ -247,36 +246,32 @@ async def stats(ctx):
 async def leaderboard(ctx):
     stats = load_stats()
     top = sorted(stats.items(), key=lambda x: x[1]['temu'] + x[1]['shein'], reverse=True)[:10]
-    lines = []
-    for i, (uid, data) in enumerate(top, 1):
-        lines.append(f"{i}. <@{uid}> - Temu: {data['temu']}, SHEIN: {data['shein']}")
+    lines = [f"{i+1}. <@{uid}> - Temu: {d['temu']}, SHEIN: {d['shein']}" for i, (uid, d) in enumerate(top)]
     await ctx.send("🏆 **Top Helpers Leaderboard** 🏆\n" + "\n".join(lines))
 
-# ----------- On Ready -----------
+# ----------- Auto Detect Links in Messages -----------
 
 @bot.event
 async def on_message(message):
     if message.author.bot:
         return
 
-    # Detect Temu or SHEIN link in any message
     link_match = re.search(r"(https?://\S+)", message.content)
     if link_match:
         link = link_match.group(1)
         if "temu.com" in link:
             await message.channel.send("🔗 Temu link detected! Attempting to claim...")
-            class Ctx:  # fake context so we can reuse run_claim()
+            class Ctx:
                 author = message.author
-                async def send(self, content): await message.channel.send(content)
+                async def send(self2, content): await message.channel.send(content)
             await run_claim(Ctx(), link, "temu")
         elif "shein.com" in link or "onelink.shein.com" in link:
             await message.channel.send("👗 SHEIN link detected! Attempting to claim...")
             class Ctx:
                 author = message.author
-                async def send(self, content): await message.channel.send(content)
+                async def send(self2, content): await message.channel.send(content)
             await run_claim(Ctx(), link, "shein")
 
-    # Ensure commands like !claim still work
     await bot.process_commands(message)
 
 # ----------- Run Bot -----------
@@ -286,4 +281,3 @@ if TOKEN:
     bot.run(TOKEN)
 else:
     print("❌ DISCORD_TOKEN is not set.")
-
