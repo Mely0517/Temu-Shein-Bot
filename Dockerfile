@@ -14,3 +14,4 @@ RUN apt-get update && apt-get install -y wget gnupg unzip curl \
 COPY . .
 
 CMD ["python", "main.py"]
+
