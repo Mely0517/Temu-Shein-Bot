@@ -1,8 +1,14 @@
-# Use official Python 3.13 slim image
-FROM python:3.13-slim
+# Use Python 3.11 slim (stable for building aiohttp)
+FROM python:3.11-slim
 
-# Install dependencies for Chrome and undetected_chromedriver
+# Install system dependencies and Chrome dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-dev \
+    gcc \
+    libc6-dev \
+    libffi-dev \
+    libssl-dev \
     wget \
     curl \
     gnupg \
@@ -19,7 +25,7 @@ RUN apt-get update && apt-get install -y \
     libgbm-dev \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# Install Chrome
+# Install Google Chrome stable
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google.list && \
     apt-get update && \
@@ -29,13 +35,13 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
 # Set working directory
 WORKDIR /app
 
-# Copy source code
+# Copy all your bot files to container
 COPY . .
 
-# Install Python dependencies
+# Upgrade pip and install Python dependencies
+RUN pip install --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose no ports since bot does not listen to HTTP
-# Just run the bot on start
-
+# Default command to run your bot
 CMD ["python", "main.py"]
+
