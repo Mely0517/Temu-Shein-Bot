@@ -255,9 +255,29 @@ async def leaderboard(ctx):
 # ----------- On Ready -----------
 
 @bot.event
-async def on_ready():
-    print(f"🤖 Logged in as {bot.user}")
-    print("✅ Ready to go!")
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    # Detect Temu or SHEIN link in any message
+    link_match = re.search(r"(https?://\S+)", message.content)
+    if link_match:
+        link = link_match.group(1)
+        if "temu.com" in link:
+            await message.channel.send("🔗 Temu link detected! Attempting to claim...")
+            class Ctx:  # fake context so we can reuse run_claim()
+                author = message.author
+                async def send(self, content): await message.channel.send(content)
+            await run_claim(Ctx(), link, "temu")
+        elif "shein.com" in link or "onelink.shein.com" in link:
+            await message.channel.send("👗 SHEIN link detected! Attempting to claim...")
+            class Ctx:
+                author = message.author
+                async def send(self, content): await message.channel.send(content)
+            await run_claim(Ctx(), link, "shein")
+
+    # Ensure commands like !claim still work
+    await bot.process_commands(message)
 
 # ----------- Run Bot -----------
 
