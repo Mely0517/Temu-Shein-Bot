@@ -1,30 +1,31 @@
-# Ignore Python cache
+# Python cache files
 __pycache__/
 *.py[cod]
 *.pyo
 
-# Ignore virtual environments
+# Virtual environment folders
 venv/
 env/
 ENV/
 
-# Ignore logs and temp files
+# Logs and temp files
 *.log
 *.tmp
 
-# Ignore your stats and token files
+# Local environment variables
 .env
+
+# Stats or user data files
 stats.json
 
-# Ignore browser profiles or selenium temp data
+# Chrome profiles or selenium temp folders
 selenium-profile/
 profile/
 userdata/
 
-# VSCode or PyCharm settings (if you use them)
+# IDE settings
 .vscode/
 .idea/
 
-# Ignore macOS files
+# macOS system files
 .DS_Store
-
