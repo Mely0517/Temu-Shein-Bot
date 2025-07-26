@@ -23,15 +23,19 @@ auto_sharing = False
 # --- Headless browser config for Render ---
 
 def get_browser():
+    import undetected_chromedriver as uc
+
     options = uc.ChromeOptions()
-    options.binary_location = "/opt/render/project/.render/chrome/opt/google/chrome/chrome"
+    options.binary_location = "/usr/bin/google-chrome"  # ✅ This is the correct path for Chrome inside Docker/Render
     options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
     options.add_argument("user-agent=Mozilla/5.0")
+
     return uc.Chrome(options=options)
+
 
 # --- Stats Helpers ---
 
