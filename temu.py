@@ -281,9 +281,9 @@ async def on_message(message):
 
 # ----------- Run Bot -----------
 
-if __name__ == "__main__":
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    if not TOKEN:
-        print("❌ ERROR: DISCORD_TOKEN not set.")
-        exit()
+TOKEN = os.getenv("DISCORD_TOKEN")
+if TOKEN:
     bot.run(TOKEN)
+else:
+    print("❌ DISCORD_TOKEN is not set.")
+
