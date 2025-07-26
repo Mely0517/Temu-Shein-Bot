@@ -2,31 +2,39 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
+*.pkl
+*.sqlite3
 
-# Virtual environment folders
-venv/
-env/
-ENV/
-
-# Logs and temp files
-*.log
-*.tmp
-
-# Local environment variables
-.env
-
-# Stats or user data files
-stats.json
-
-# Chrome profiles or selenium temp folders
-selenium-profile/
-profile/
-userdata/
-
-# IDE settings
+# VSCode or JetBrains IDEs
 .vscode/
 .idea/
 
-# macOS system files
-.DS_Store
+# Virtual environments
+env/
+venv/
+ENV/
+.venv/
 
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs and debug
+*.log
+*.bak
+
+# Selenium/Chrome user data (if saved)
+selenium_profile/
+profile_default/
+
+# Render build files (optional)
+render-build/
+build/
+
+# Secrets
+.env
+*.env
+
+# GitHub credentials or config
+.git-credentials
