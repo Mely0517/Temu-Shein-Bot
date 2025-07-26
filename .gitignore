@@ -1,4 +1,7 @@
 __pycache__/
-*.pyc
 .env
-stats.json
+*.pyc
+*.pyo
+*.pyd
+*.log
+.cache/
