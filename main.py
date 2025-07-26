@@ -1,24 +1,24 @@
 import os
 import discord
 from discord.ext import commands
-from temu import setup_bot  # This is your full Temu + SHEIN game logic
+from temu import setup_bot  # Your full Temu + SHEIN bot logic
 
 intents = discord.Intents.default()
 intents.message_content = True  # Required to read messages for commands
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Call the setup function from temu.py to load all commands
+# Load commands and events from temu.py
 setup_bot(bot)
 
 @bot.event
 async def on_ready():
     print(f"✅ Bot is online as {bot.user}")
 
-# Start the bot with your token from environment variable
 if __name__ == "__main__":
     TOKEN = os.getenv("DISCORD_TOKEN")
-    if TOKEN is None:
-        print("❌ DISCORD_TOKEN not set in environment variables.")
+    if not TOKEN:
+        print("❌ DISCORD_TOKEN environment variable not set!")
     else:
         bot.run(TOKEN)
+
