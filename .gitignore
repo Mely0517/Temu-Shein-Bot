@@ -1,40 +1,4 @@
-# Python cache files
 __pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.pkl
-*.sqlite3
-
-# VSCode or JetBrains IDEs
-.vscode/
-.idea/
-
-# Virtual environments
-env/
-venv/
-ENV/
-.venv/
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Logs and debug
-*.log
-*.bak
-
-# Selenium/Chrome user data (if saved)
-selenium_profile/
-profile_default/
-
-# Render build files (optional)
-render-build/
-build/
-
-# Secrets
+*.pyc
 .env
-*.env
-
-# GitHub credentials or config
-.git-credentials
+stats.json
