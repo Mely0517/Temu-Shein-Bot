@@ -1,19 +1,20 @@
-# Use official Python image
+# Use official Python slim image
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install system dependencies required for audioop and Chrome (for undetected-chromedriver)
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
     libffi-dev \
     libssl-dev \
+    libc6-dev \
+    libasound2-dev \
     wget \
     curl \
     gnupg \
     ca-certificates \
     fonts-liberation \
     libappindicator3-1 \
-    libasound2 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libcups2 \
@@ -31,15 +32,18 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Set working directory inside container
 WORKDIR /app
 
-# Copy files
+# Copy all project files into container
 COPY . .
 
-# Install dependencies
+# Upgrade pip and install Python dependencies from requirements.txt
 RUN pip install --upgrade pip setuptools wheel
-RUN pip install -r requirements.txt
+RUN pip install --root-user-action=ignore -r requirements.txt
 
-# Run the bot
+# Expose port (optional, not needed for Discord bot but good practice)
+EXPOSE 8080
+
+# Command to run your bot
 CMD ["python", "main.py"]
