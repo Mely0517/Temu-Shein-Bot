@@ -156,8 +156,11 @@ async def addlink(ctx, link: str):
 # === Auto-Loop ===
 @bot.command()
 async def loop(ctx):
-    auto_loop.start()
-    await ctx.send("🔁 Auto-loop every 30 minutes started.")
+    if not auto_loop.is_running():
+        auto_loop.start()
+        await ctx.send("🔁 Auto-loop every 30 minutes started.")
+    else:
+        await ctx.send("♻️ Auto-loop already running.")
 
 @tasks.loop(minutes=30)
 async def auto_loop():
@@ -176,10 +179,13 @@ async def send_scheduled_dms():
             except:
                 continue
 
-# === Setup Bot ===
-def setup_bot(b):
-    global bot
-    bot = b
-    send_scheduled_dms.start()
-    auto_loop.stop()
+# === Setup Bot (called from main.py) ===
+def setup_bot():
+    @bot.event
+    async def on_ready():
+        print(f"✅ Logged in as {bot.user}")
+        if not send_scheduled_dms.is_running():
+            send_scheduled_dms.start()
+        if not auto_loop.is_running():
+            auto_loop.start()
     return bot
