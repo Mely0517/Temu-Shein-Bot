@@ -113,14 +113,19 @@ async def claim(ctx, link: str):
 # === Game Shortcuts ===
 @bot.command()
 async def farm(ctx): await claim(ctx, "https://temu.com/s/farm-invite-link")
+
 @bot.command()
 async def fish(ctx): await claim(ctx, "https://temu.com/s/fishland-invite-link")
+
 @bot.command()
 async def stack(ctx): await claim(ctx, "https://temu.com/s/stack-invite-link")
+
 @bot.command()
 async def spin(ctx): await claim(ctx, "https://temu.com/s/spin-invite-link")
+
 @bot.command()
 async def gift(ctx): await claim(ctx, "https://temu.com/s/5-gift-invite-link")
+
 @bot.command()
 async def shein(ctx): await claim(ctx, "https://shein.com/your-game-link")
 
@@ -171,8 +176,10 @@ async def send_scheduled_dms():
             except:
                 continue
 
-# === Setup Bot (Call This Once) ===
-def setup_bot():
+# === Setup Bot ===
+def setup_bot(b):
+    global bot
+    bot = b
     send_scheduled_dms.start()
     auto_loop.stop()
     return bot
