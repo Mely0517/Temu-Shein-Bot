@@ -9,7 +9,12 @@ import asyncio
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+# Set up intents properly — only enable what you need
+intents = discord.Intents.default()
+intents.message_content = True  # For reading command messages
+intents.members = True          # For fetching members (needed for scheduled DMs)
+
+bot = commands.Bot(command_prefix="!", intents=intents)
 
 shared_links = []
 rewards_db_path = "rewards.json"
