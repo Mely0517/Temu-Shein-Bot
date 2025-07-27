@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
-from temu import setup_bot
 import os
+from temu import setup_bot
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
@@ -9,4 +9,5 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 setup_bot(bot)
 
 if __name__ == "__main__":
-    bot.run(os.getenv("DISCORD_TOKEN"))
+    import asyncio
+    asyncio.run(bot.start(os.getenv("DISCORD_TOKEN")))
