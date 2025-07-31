@@ -1,13 +1,4 @@
-# Python cache
+*.pyc
 __pycache__/
-*.py[cod]
-
-# Environment variables
 .env
-
-# JSON data or saved session state
 rewards.json
-
-# System files
-.DS_Store
-*.log
