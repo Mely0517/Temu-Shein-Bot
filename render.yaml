@@ -2,9 +2,11 @@ services:
   - type: worker
     name: temu-shein-bot
     runtime: python
-    pythonVersion: 3.11
+    pythonVersion: 3.10  # ✅ downgrade from 3.13
     buildCommand: "pip install --no-cache-dir -r requirements.txt"
     startCommand: "python main.py"
     envVars:
       - key: DISCORD_TOKEN
+        sync: false
+      - key: DISCORD_CHANNEL_ID
         sync: false
