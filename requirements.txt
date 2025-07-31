@@ -1,4 +1,4 @@
 discord.py==2.3.2
 undetected-chromedriver==3.5.5
 selenium==4.11.2
-aiohttp==3.8.1
+aiohttp==3.8.4
