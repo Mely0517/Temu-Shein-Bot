@@ -16,26 +16,23 @@ REFERRAL_LINKS = [
     "https://onelink.shein.com/15/4vzqo6j35pna"
 ]
 
-# ✅ HEADLESS BROWSER WITH BINARY LOCATION FIX
 def get_browser():
     options = uc.ChromeOptions()
-    options.binary_location = "/usr/bin/google-chrome"  # <- This line is critical on Render
+    options.binary_location = "/usr/bin/google-chrome"
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
-    
     user_agent = random.choice([
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)",
         "Mozilla/5.0 (Linux; Android 10)"
     ])
     options.add_argument(f"user-agent={user_agent}")
-
-    return uc.Chrome(options=options)
-
-# ------------------ DISCORD BOT SETUP ------------------
+    
+    # ✅ Manually specify path to Chrome binary
+    return uc.Chrome(options=options, browser_executable_path="/usr/bin/google-chrome")
 
 intents = discord.Intents.default()
 intents.message_content = True
