@@ -1,30 +1,27 @@
 import asyncio
-import random
 from pyppeteer import launch
-from proxy_utils import get_random_proxy
+from pyppeteer_stealth import stealth
 
-async def boost_shein(ctx, link=None):
-    url = link or "https://onelink.shein.com/15/4vzpagy20nbj"
+async def boost_shein_link(link: str, proxy: str = None):
+    args = ['--no-sandbox']
+    if proxy:
+        args.append(f'--proxy-server={proxy}')
+
+    browser = await launch(headless=True, args=args)
     try:
-        proxy = get_random_proxy()
-        browser = await launch({
-            "headless": True,
-            "args": [
-                f'--proxy-server={proxy}',
-                '--no-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-infobars',
-                '--window-size=1920,1080',
-                f'--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
-            ]
-        })
         page = await browser.newPage()
-        await page.goto(url, timeout=60000)
-        await asyncio.sleep(random.randint(5, 9))
-        await page.evaluate('window.scrollBy(0, window.innerHeight)')
-        await asyncio.sleep(random.randint(2, 4))
+        await stealth(page)
+
+        await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36")
+        await page.goto(link, timeout=60000)
+
+        await asyncio.sleep(5)
+        await page.mouse.move(250, 250)
+        await page.mouse.click(250, 250)
+        await asyncio.sleep(3)
+        await page.evaluate('window.scrollBy(0, 600)')
+        await asyncio.sleep(2)
+        await page.evaluate('window.scrollBy(0, 1000)')
+        await asyncio.sleep(5)
+    finally:
         await browser.close()
-        await ctx.send(f"✅ Boosted SHEIN link: {url}")
-    except Exception as e:
-        await ctx.send(f"❌ Error with {url}: {e}")
