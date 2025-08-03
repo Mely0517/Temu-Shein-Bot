@@ -2,8 +2,9 @@ services:
   - type: worker
     name: temu-shein-bot
     env: python
-    buildCommand: pip install --no-cache-dir -r requirements.txt
+    plan: free
+    buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     envVars:
       - key: DISCORD_BOT_TOKEN
-        value: YOUR_DISCORD_BOT_TOKEN_HERE
+        sync: false
