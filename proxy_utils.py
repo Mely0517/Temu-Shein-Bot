@@ -2,10 +2,10 @@ import itertools
 
 # List of proxies — format: ip:port or user:pass@ip:port if needed
 proxies = [
-    "123.45.67.89:8080",
-    "98.76.54.32:8000",
-    "username:password@111.222.333.444:3128",
-    # Add more here
+    "http://103.172.70.45:7070",
+    "http://138.2.86.245:3128",
+    "http://47.88.11.3:8080",
+    # Replace with working ones from ProxyScrape, BrightData, etc.
 ]
 
 proxy_cycle = itertools.cycle(proxies)
