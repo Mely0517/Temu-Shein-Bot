@@ -2,24 +2,33 @@ import asyncio
 from pyppeteer import launch
 from proxy_utils import get_random_proxy
 
-async def boost_temu(link):
+async def visit_temu_referral(url):
+    proxy = get_random_proxy()
+    print(f"🟡 Using proxy: {proxy}")
+
+    browser = await launch({
+        "headless": True,
+        "args": [
+            f'--proxy-server={proxy}',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--window-size=1280,800',
+            '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        ]
+    })
+
+    page = await browser.newPage()
+
     try:
-        proxy = get_random_proxy()
-        browser = await launch({
-            'headless': True,
-            'args': [
-                f'--proxy-server={proxy}',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--window-size=1920,1080'
-            ]
-        })
-        page = await browser.newPage()
-        await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36")
-        await page.goto(link, timeout=60000)
-        await asyncio.sleep(8)  # Simulate time on page
-        await browser.close()
-        return f"✅ Temu visit complete for {link}"
+        await page.goto(url, timeout=30000)
+        await asyncio.sleep(5)
+        await page.mouse.move(200, 200)
+        await page.mouse.click(200, 200)
+        await asyncio.sleep(3)
+        print(f"✅ Visited TEMU referral: {url}")
     except Exception as e:
-        return f"❌ Error with {link}: {e}"
+        print(f"❌ TEMU error: {e}")
+    finally:
+        await browser.close()
