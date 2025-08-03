@@ -16,8 +16,10 @@ REFERRAL_LINKS = [
     "https://onelink.shein.com/15/4vzqo6j35pna"
 ]
 
+# ✅ HEADLESS BROWSER WITH BINARY LOCATION FIX
 def get_browser():
     options = uc.ChromeOptions()
+    options.binary_location = "/usr/bin/google-chrome"  # ← this line is critical on Render
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-gpu")
@@ -30,6 +32,8 @@ def get_browser():
     ])
     options.add_argument(f"user-agent={user_agent}")
     return uc.Chrome(options=options)
+
+# ------------------ DISCORD BOT SETUP ------------------
 
 intents = discord.Intents.default()
 intents.message_content = True
