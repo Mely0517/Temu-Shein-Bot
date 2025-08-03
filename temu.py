@@ -7,7 +7,7 @@ async def boost_temu_link(link: str, proxy: str = None):
     if proxy:
         args.append(f'--proxy-server={proxy}')
 
-    browser = await launch(headless=True, args=args)
+    browser = await launch(headless=True, args=args, handleSIGINT=False, handleSIGTERM=False, handleSIGHUP=False)
     try:
         page = await browser.newPage()
         await stealth(page)
