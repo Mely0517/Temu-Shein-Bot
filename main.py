@@ -1,36 +1,70 @@
 import discord
-from discord.ext import commands
-import os
-from dotenv import load_dotenv
-from temu import boost_temu
-from shein import boost_shein
-
-load_dotenv()
-
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+from discord.ext import commands, tasks
+import asyncio
+from temu import boost_temu_link
+from shein import boost_shein_link
+from proxy_utils import get_next_proxy
 
 intents = discord.Intents.default()
+intents.messages = True
 intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# Background loop control
+temu_links_file = "temu_links.txt"
+shein_links_file = "shein_links.txt"
 
 @bot.event
 async def on_ready():
-    print(f"✅ Logged in as {bot.user}")
+    print(f'✅ Logged in as {bot.user}')
+    background_boost.start()
 
 @bot.command()
-async def boost(ctx, link: str):
+async def boost(ctx, *, link: str):
+    await ctx.send(f"🔄 Boosting: {link}")
     try:
+        proxy = get_next_proxy()
         if "temu.com" in link:
-            await ctx.send(f"🟡 Starting Temu boost for: {link}")
-            await boost_temu(link)
-            await ctx.send("✅ Temu boost completed.")
+            await boost_temu_link(link, proxy)
         elif "shein.com" in link:
-            await ctx.send(f"🟡 Starting SHEIN boost for: {link}")
-            await boost_shein(link)
-            await ctx.send("✅ SHEIN boost completed.")
+            await boost_shein_link(link, proxy)
         else:
-            await ctx.send("❌ Invalid link. Please send a valid Temu or SHEIN link.")
+            await ctx.send("❌ Unsupported link format.")
+            return
+        await ctx.send(f"✅ Successfully boosted: {link}")
     except Exception as e:
-        await ctx.send(f"❌ Error with {link}: {e}")
+        await ctx.send(f"❌ Error with {link}: {str(e)}")
 
-bot.run(TOKEN)
+@tasks.loop(seconds=60)  # Runs every 60 seconds
+async def background_boost():
+    try:
+        with open(temu_links_file, "r") as tf:
+            temu_links = [l.strip() for l in tf if l.strip()]
+        with open(shein_links_file, "r") as sf:
+            shein_links = [l.strip() for l in sf if l.strip()]
+
+        all_links = []
+        for t, s in zip(temu_links, shein_links):
+            all_links.append(t)
+            all_links.append(s)
+        leftover = temu_links[len(shein_links):] if len(temu_links) > len(shein_links) else shein_links[len(temu_links):]
+        all_links += leftover
+
+        for link in all_links:
+            proxy = get_next_proxy()
+            try:
+                if "temu.com" in link:
+                    await boost_temu_link(link, proxy)
+                elif "shein.com" in link:
+                    await boost_shein_link(link, proxy)
+                else:
+                    print(f"❌ Skipped invalid link: {link}")
+                await asyncio.sleep(10)  # Wait between actions
+            except Exception as e:
+                print(f"❌ Background boost error for {link}: {e}")
+    except Exception as e:
+        print(f"❌ Error in background_boost task: {e}")
+
+# Replace this with your real token
+bot.run("YOUR_DISCORD_BOT_TOKEN")
