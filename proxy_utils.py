@@ -1,6 +1,5 @@
 import random
 
-# Replace with real rotating proxies
 PROXY_LIST = [
     "http://161.186.166.60:9338",
     "http://125.119.185.110:7350",
