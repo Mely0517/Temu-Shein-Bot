@@ -1,14 +1,11 @@
+import os
 import discord
 from discord.ext import commands
-import os
-import asyncio
+from temu import boost_temu
+from shein import boost_shein
 from dotenv import load_dotenv
-from temu import visit_temu_referral
-from shein import visit_shein_referral
 
 load_dotenv()
-
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -17,18 +14,27 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}!")
+    channel_id = os.getenv("DISCORD_CHANNEL_ID")
+    if channel_id:
+        channel = bot.get_channel(int(channel_id))
+        if channel:
+            await channel.send("🚀 Bot is online and ready to boost Temu/SHEIN links!")
 
 @bot.command()
-async def boost(ctx, *, link: str):
-    if "temu.com" in link:
-        await ctx.send("🚀 Boosting TEMU link...")
-        await visit_temu_referral(link)
-        await ctx.send("✅ TEMU visit complete.")
-    elif "shein.com" in link:
-        await ctx.send("🚀 Boosting SHEIN link...")
-        await visit_shein_referral(link)
-        await ctx.send("✅ SHEIN visit complete.")
-    else:
-        await ctx.send("⚠️ Invalid link. Please send a Temu or SHEIN referral link.")
+async def temu(ctx, link: str = None):
+    await ctx.send("🟠 Starting Temu boost...")
+    await boost_temu(link)
+    await ctx.send("✅ Temu boost complete!")
 
-bot.run(TOKEN)
+@bot.command()
+async def shein(ctx, link: str = None):
+    await ctx.send("🟣 Starting SHEIN boost...")
+    await boost_shein(link)
+    await ctx.send("✅ SHEIN boost complete!")
+
+def setup_bot():
+    token = os.getenv("DISCORD_TOKEN")
+    if token:
+        bot.run(token)
+    else:
+        print("❌ DISCORD_TOKEN not found in environment variables.")
