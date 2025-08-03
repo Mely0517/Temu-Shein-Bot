@@ -1,4 +1,4 @@
 discord.py==2.3.2
 pyppeteer==1.0.2
-pyppeteer-stealth==2.7.5
+pyppeteer-stealth==2.7.4
 aiohttp==3.8.6
