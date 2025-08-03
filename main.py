@@ -37,6 +37,10 @@ async def boost(ctx, *, link: str):
     except Exception as e:
         await ctx.send(f"❌ Error with {link}: {str(e)}")
 
+@bot.command()
+async def ping(ctx):
+    await ctx.send("🏓 Pong! The bot is alive.")
+
 @tasks.loop(seconds=60)
 async def background_boost():
     try:
