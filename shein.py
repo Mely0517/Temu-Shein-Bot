@@ -7,13 +7,14 @@ async def boost_shein_link(link, discord_channel=None):
     print(f"⏳ Starting SHEIN boost for: {link}")
     
     proxy = get_random_proxy()
-    proxy_url = f"http://{proxy['ip']}:{proxy['port']}"
+    proxy_auth_url = f"http://{proxy['username']}:{proxy['password']}@{proxy['ip']}:{proxy['port']}"
+
     browser_args = [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-blink-features=AutomationControlled',
-        f'--proxy-server={proxy_url}',
+        f'--proxy-server={proxy_auth_url}',
         '--window-size=1920,1080',
     ]
 
@@ -25,12 +26,6 @@ async def boost_shein_link(link, discord_channel=None):
         })
 
         page = await browser.newPage()
-
-        if proxy.get('username') and proxy.get('password'):
-            await page.authenticate({
-                'username': proxy['username'],
-                'password': proxy['password'],
-            })
 
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
