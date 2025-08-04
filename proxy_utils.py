@@ -1,28 +1,17 @@
 import itertools
 
-# Your authenticated proxies in this format: host:port:username:password
-raw_proxies = [
-    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg",
-    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg",
-    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg",
-    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg",
-    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg",
-]
+# Your authenticated proxy credentials
+PROXY_LIST = [
+    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg"
+] * 10  # Use the same proxy 10x for rotation
 
-proxy_cycle = itertools.cycle(raw_proxies)
+proxy_cycle = itertools.cycle(PROXY_LIST)
 
 def get_next_proxy():
     proxy = next(proxy_cycle)
-    parts = proxy.strip().split(":")
-    if len(parts) != 4:
-        raise ValueError(f"Invalid proxy format: {proxy}")
-    
-    host, port, user, pwd = parts
-    proxy_url = f"http://{user}:{pwd}@{host}:{port}"
-    
+    host, port, user, pwd = proxy.strip().split(":")
     return {
         "server": f"http://{host}:{port}",
         "username": user,
-        "password": pwd,
-        "pyppeteer_proxy": proxy_url
+        "password": pwd
     }
