@@ -1,11 +1,9 @@
 import asyncio
 from pyppeteer import launch
 import random
-import time
 from proxy_utils import get_random_proxy
 
-
-async def boost_shein(link, discord_channel=None):
+async def boost_shein_link(link, discord_channel=None):
     print(f"⏳ Starting SHEIN boost for: {link}")
     
     proxy = get_random_proxy()
@@ -24,14 +22,10 @@ async def boost_shein(link, discord_channel=None):
             'headless': True,
             'args': browser_args,
             'ignoreHTTPSErrors': True,
-            'handleSIGINT': False,
-            'handleSIGTERM': False,
-            'handleSIGHUP': False,
         })
 
         page = await browser.newPage()
 
-        # Authenticate proxy if needed
         if proxy.get('username') and proxy.get('password'):
             await page.authenticate({
                 'username': proxy['username'],
@@ -39,24 +33,20 @@ async def boost_shein(link, discord_channel=None):
             })
 
         await page.setUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
         await page.goto(link, timeout=60000)
+        await asyncio.sleep(random.uniform(3, 5))
 
-        await asyncio.sleep(random.uniform(3, 5))  # Let the page load
-
-        # Simulate human scrolling and waiting
         for _ in range(random.randint(1, 3)):
             await page.evaluate("""() => {
                 window.scrollBy(0, window.innerHeight * 0.5);
             }""")
             await asyncio.sleep(random.uniform(1, 2))
 
-        await asyncio.sleep(random.uniform(3, 6))  # More wait time before closing
-
+        await asyncio.sleep(random.uniform(3, 6))
         await browser.close()
 
         msg = f"✅ Boost successful for SHEIN link: {link}"
