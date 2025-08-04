@@ -12,7 +12,6 @@ intents.message_content = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Files for background boosting
 temu_links_file = "temu_links.txt"
 shein_links_file = "shein_links.txt"
 
@@ -36,10 +35,6 @@ async def boost(ctx, *, link: str):
         await ctx.send(f"✅ Successfully boosted: {link}")
     except Exception as e:
         await ctx.send(f"❌ Error with {link}: {str(e)}")
-
-@bot.command()
-async def ping(ctx):
-    await ctx.send("🏓 Pong! The bot is alive.")
 
 @tasks.loop(seconds=60)
 async def background_boost():
@@ -71,7 +66,6 @@ async def background_boost():
     except Exception as e:
         print(f"❌ Error in background_boost task: {e}")
 
-# ✅ Securely read Discord token from environment
 token = os.environ.get("DISCORD_TOKEN")
 if not token:
     raise ValueError("❌ DISCORD_TOKEN not found in environment variables.")
