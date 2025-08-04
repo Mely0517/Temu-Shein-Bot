@@ -1,17 +1,13 @@
-import itertools
+import random
 
-# Your authenticated proxy credentials
-PROXY_LIST = [
-    "geo.iproyal.com:12321:PpCMxtvpv1VpA9te:8cFhbwxhl0vyO5Hg"
-] * 10  # Use the same proxy 10x for rotation
+PROXIES = [
+    {
+        "ip": "geo.iproyal.com",
+        "port": "12321",
+        "username": "YOUR_USERNAME_HERE",  # 🔐 Replace this with your IPRoyal username
+        "password": "PpCMxtvpv1VpA"
+    },
+]
 
-proxy_cycle = itertools.cycle(PROXY_LIST)
-
-def get_next_proxy():
-    proxy = next(proxy_cycle)
-    host, port, user, pwd = proxy.strip().split(":")
-    return {
-        "server": f"http://{host}:{port}",
-        "username": user,
-        "password": pwd
-    }
+def get_random_proxy():
+    return random.choice(PROXIES)
