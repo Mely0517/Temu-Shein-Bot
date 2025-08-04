@@ -4,7 +4,7 @@ PROXIES = [
     {
         "ip": "geo.iproyal.com",
         "port": "12321",
-        "username": "YOUR_USERNAME_HERE",  # 🔐 Replace this with your IPRoyal username
+        "username": "YOUR_USERNAME_HERE",  # 🔐 Replace with your real IPRoyal username
         "password": "PpCMxtvpv1VpA"
     },
 ]
