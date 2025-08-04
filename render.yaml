@@ -1,6 +1,7 @@
 services:
   - type: worker
     name: temu-shein-bot
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    env: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python main.py"
