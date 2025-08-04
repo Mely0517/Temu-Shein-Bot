@@ -1,4 +1,5 @@
 import asyncio
+import discord  # ✅ Added so discord.utils.get works
 from discord.ext import tasks
 from shein import boost_shein_link
 from temu import boost_temu_link
