@@ -8,3 +8,4 @@ services:
       pip install --no-cache-dir -r requirements.txt
       pip install git+https://github.com/requireCool/pyppeteer-stealth.git
     startCommand: "python main.py"
+
