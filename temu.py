@@ -1,22 +1,8 @@
-# 🚀 Auto-install pyppeteer_stealth if missing
-import subprocess
-import sys
-
-try:
-    import pyppeteer_stealth
-except ImportError:
-    print("⚠️ pyppeteer_stealth not found. Installing now...")
-    subprocess.check_call([
-        sys.executable, "-m", "pip", "install",
-        "git+https://github.com/requireCool/pyppeteer-stealth.git"
-    ])
-    import pyppeteer_stealth
-
 import asyncio
 from pyppeteer import launch
 import random
 from proxy_utils import get_random_proxy
-from pyppeteer_stealth import stealth
+from pyppeteer_stealth import stealth  # ✅ From PyPI, no GitHub clone
 
 async def boost_temu_link(link, discord_channel=None):
     print(f"⏳ Starting TEMU boost for: {link}")
@@ -41,7 +27,7 @@ async def boost_temu_link(link, discord_channel=None):
         })
 
         page = await browser.newPage()
-        await stealth(page)
+        await stealth(page)  # Stealth mode from PyPI package
 
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
