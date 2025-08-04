@@ -1,17 +1,3 @@
-# 🚀 Auto-install pyppeteer_stealth if missing
-import subprocess
-import sys
-
-try:
-    import pyppeteer_stealth
-except ImportError:
-    print("⚠️ pyppeteer_stealth not found. Installing now...")
-    subprocess.check_call([
-        sys.executable, "-m", "pip", "install", 
-        "git+https://github.com/requireCool/pyppeteer-stealth.git"
-    ])
-    import pyppeteer_stealth
-
 import discord
 from discord.ext import commands, tasks
 import os
