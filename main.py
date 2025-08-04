@@ -1,3 +1,17 @@
+# 🚀 Auto-install pyppeteer_stealth if missing
+import subprocess
+import sys
+
+try:
+    import pyppeteer_stealth
+except ImportError:
+    print("⚠️ pyppeteer_stealth not found. Installing now...")
+    subprocess.check_call([
+        sys.executable, "-m", "pip", "install", 
+        "git+https://github.com/requireCool/pyppeteer-stealth.git"
+    ])
+    import pyppeteer_stealth
+
 import discord
 from discord.ext import commands, tasks
 import os
@@ -5,6 +19,9 @@ from background import background_boost_loop, get_boost_stats, reload_links
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 ADMIN_ID = os.getenv("DISCORD_ADMIN_ID")  # Optional: set your Discord ID in Render
+
+if not TOKEN:
+    raise ValueError("❌ DISCORD_BOT_TOKEN environment variable not set!")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -33,7 +50,9 @@ async def status(ctx):
     if ADMIN_ID and str(ctx.author.id) != ADMIN_ID:
         return await ctx.send("⛔ Admin only.")
     stats = get_boost_stats()
-    await ctx.send(f"📊 Boosted {stats['shein']} SHEIN links and {stats['temu']} TEMU links so far.")
+    await ctx.send(
+        f"📊 Boosted {stats['shein']} SHEIN links and {stats['temu']} TEMU links so far."
+    )
 
 @bot.command()
 async def refresh(ctx):
