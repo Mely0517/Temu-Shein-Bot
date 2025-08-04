@@ -2,6 +2,7 @@ import asyncio
 from pyppeteer import launch
 import random
 from proxy_utils import get_random_proxy
+from pyppeteer_stealth import stealth
 
 async def boost_shein_link(link, discord_channel=None):
     print(f"⏳ Starting SHEIN boost for: {link}")
@@ -26,6 +27,7 @@ async def boost_shein_link(link, discord_channel=None):
         })
 
         page = await browser.newPage()
+        await stealth(page)
 
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
