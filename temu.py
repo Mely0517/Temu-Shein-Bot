@@ -1,20 +1,61 @@
+import asyncio
 from pyppeteer import launch
-from pyppeteer_stealth import stealth
+import random
+from proxy_utils import get_random_proxy
 
-async def boost_temu_link(link, proxy):
-    browser = await launch(
-        headless=True,
-        args=[
-            f'--proxy-server={proxy["server"]}',
-            "--no-sandbox", "--disable-setuid-sandbox"
-        ]
-    )
-    page = await browser.newPage()
-    await page.authenticate({
-        'username': proxy["username"],
-        'password': proxy["password"]
-    })
-    await stealth(page)
-    await page.goto(link, timeout=60000)
-    await page.waitForTimeout(5000)
-    await browser.close()
+async def boost_temu_link(link, discord_channel=None):
+    print(f"⏳ Starting TEMU boost for: {link}")
+    
+    proxy = get_random_proxy()
+    proxy_url = f"http://{proxy['ip']}:{proxy['port']}"
+    browser_args = [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-blink-features=AutomationControlled',
+        f'--proxy-server={proxy_url}',
+        '--window-size=1920,1080',
+    ]
+
+    try:
+        browser = await launch({
+            'headless': True,
+            'args': browser_args,
+            'ignoreHTTPSErrors': True,
+        })
+
+        page = await browser.newPage()
+
+        if proxy.get('username') and proxy.get('password'):
+            await page.authenticate({
+                'username': proxy['username'],
+                'password': proxy['password'],
+            })
+
+        await page.setUserAgent(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        )
+
+        await page.goto(link, timeout=60000)
+        await asyncio.sleep(random.uniform(3, 5))
+
+        for _ in range(random.randint(1, 3)):
+            await page.evaluate("""() => {
+                window.scrollBy(0, window.innerHeight * 0.5);
+            }""")
+            await asyncio.sleep(random.uniform(1, 2))
+
+        await asyncio.sleep(random.uniform(3, 6))
+        await browser.close()
+
+        msg = f"✅ Boost successful for TEMU link: {link}"
+        print(msg)
+        if discord_channel:
+            await discord_channel.send(msg)
+
+    except Exception as e:
+        error_msg = f"❌ Error with {link}: {e}"
+        print(error_msg)
+        if discord_channel:
+            await discord_channel.send(error_msg)
