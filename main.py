@@ -6,6 +6,9 @@ from temu import boost_temu_link
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 
+if not TOKEN:
+    raise ValueError("❌ DISCORD_BOT_TOKEN environment variable not set!")
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
