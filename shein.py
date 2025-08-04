@@ -35,6 +35,8 @@ async def boost_shein_link(link, discord_channel=None):
         )
 
         await page.goto(link, timeout=60000)
+        await page.waitForSelector('body', timeout=10000)  # ✅ Ensures full page load
+
         await asyncio.sleep(random.uniform(3, 5))
 
         for _ in range(random.randint(1, 3)):
