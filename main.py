@@ -3,41 +3,41 @@ from discord.ext import commands
 import os
 from background import background_boost_loop, get_boost_stats, reload_links
 
-# Load environment variables from Render
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-ADMIN_ID = os.getenv("DISCORD_ADMIN_ID")  # Optional: Your Discord ID for admin commands
+ADMIN_ID = os.getenv("DISCORD_ADMIN_ID")  # Optional: Set your Discord user ID in Render for admin control
 
 if not TOKEN:
     raise ValueError("❌ DISCORD_BOT_TOKEN environment variable not set!")
 
-# Bot settings
+# Discord bot setup
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    """Bot is ready and starts background boosting."""
     print(f"✅ Logged in as {bot.user}")
     background_boost_loop.start(bot)
+    for guild in bot.guilds:
+        print(f"📡 Connected to server: {guild.name} (ID: {guild.id})")
 
 @bot.command()
 async def boost(ctx, link: str):
-    """Manually boost a single SHEIN or TEMU link."""
+    """Boost a single SHEIN or TEMU link."""
     await ctx.send(f"🚀 Boosting: {link}")
     from shein import boost_shein_link
     from temu import boost_temu_link
 
-    if "shein.com" in link.lower():
+    if "shein.com" in link:
         await boost_shein_link(link, ctx.channel)
-    elif "temu.com" in link.lower():
+    elif "temu.com" in link:
         await boost_temu_link(link, ctx.channel)
     else:
-        await ctx.send("❌ Invalid link. Must be a SHEIN or TEMU link.")
+        await ctx.send("❌ Invalid link. Please provide a SHEIN or TEMU link.")
 
 @bot.command()
 async def status(ctx):
-    """Show boost statistics (admin only if ADMIN_ID is set)."""
+    """Show how many boosts have been done."""
     if ADMIN_ID and str(ctx.author.id) != ADMIN_ID:
         return await ctx.send("⛔ Admin only.")
     stats = get_boost_stats()
@@ -47,11 +47,10 @@ async def status(ctx):
 
 @bot.command()
 async def refresh(ctx):
-    """Reload link files without restarting the bot (admin only)."""
+    """Reload SHEIN and TEMU link files."""
     if ADMIN_ID and str(ctx.author.id) != ADMIN_ID:
         return await ctx.send("⛔ Admin only.")
     reload_links()
     await ctx.send("🔄 Link files reloaded.")
 
-# Start bot
 bot.run(TOKEN)
