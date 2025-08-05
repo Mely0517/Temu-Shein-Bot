@@ -1,25 +1,38 @@
 import asyncio
 import random
+import socket
 from pyppeteer import launch
 from proxy_utils import get_random_proxy
 from pyppeteer_stealth import stealth
 
-MAX_RETRIES = 3  # Retry attempts
+CHROME_PATH = "/opt/render/.local/share/pyppeteer/local-chromium/588429/chrome-linux/chrome"
+
+async def test_proxy(ip, port, timeout=5):
+    try:
+        socket.create_connection((ip, int(port)), timeout=timeout)
+        return True
+    except:
+        return False
 
 async def boost_shein_link(link, discord_channel=None):
-    print(f"⏳ Starting SHEIN boost for: {link}")
-
-    for attempt in range(1, MAX_RETRIES + 1):
+    for attempt in range(3):
         proxy = get_random_proxy()
-        proxy_server = f"{proxy['ip']}:{proxy['port']}"
-        print(f"🌐 Using proxy {proxy_server} (Attempt {attempt}/{MAX_RETRIES})")
+        print(f"🌐 Using proxy {proxy['ip']}:{proxy['port']} (Attempt {attempt+1}/3)")
+
+        # Test proxy before launching browser
+        if not await asyncio.to_thread(test_proxy, proxy['ip'], proxy['port']):
+            print(f"⚠️ Proxy {proxy['ip']}:{proxy['port']} is unreachable, skipping...")
+            continue
+
+        proxy_url = f"http://{proxy['ip']}:{proxy['port']}"
 
         browser_args = [
+            f'--proxy-server={proxy_url}',
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-blink-features=AutomationControlled',
-            f'--proxy-server={proxy_server}',
+            '--disable-features=IsolateOrigins,site-per-process',
             '--window-size=1920,1080',
         ]
 
@@ -27,19 +40,19 @@ async def boost_shein_link(link, discord_channel=None):
             browser = await launch({
                 'headless': True,
                 'args': browser_args,
+                'executablePath': CHROME_PATH,
                 'ignoreHTTPSErrors': True,
             })
 
             page = await browser.newPage()
 
-            # Authenticate proxy if username/password provided
-            if proxy.get("username") and proxy.get("password"):
-                await page.authenticate({
-                    'username': proxy['username'],
-                    'password': proxy['password']
-                })
+            # Proxy authentication
+            await page.authenticate({
+                'username': proxy['username'],
+                'password': proxy['password']
+            })
 
-            await stealth(page)  # Hide automation
+            await stealth(page)
 
             await page.setUserAgent(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -49,7 +62,8 @@ async def boost_shein_link(link, discord_channel=None):
             await page.goto(link, timeout=60000)
             await page.waitForSelector('body', timeout=10000)
 
-            # Simulate human scrolling
+            await asyncio.sleep(random.uniform(3, 5))
+
             for _ in range(random.randint(1, 3)):
                 await page.evaluate("""() => { window.scrollBy(0, window.innerHeight * 0.5); }""")
                 await asyncio.sleep(random.uniform(1, 2))
@@ -61,12 +75,12 @@ async def boost_shein_link(link, discord_channel=None):
             print(msg)
             if discord_channel:
                 await discord_channel.send(msg)
-            return  # Success → Exit function
+            return  # ✅ Exit after success
 
         except Exception as e:
-            error_msg = f"❌ Error boosting {link} with {proxy_server}: {e}"
+            error_msg = f"❌ Error boosting {link} with {proxy['ip']}:{proxy['port']}: {e}"
             print(error_msg)
             if discord_channel:
                 await discord_channel.send(error_msg)
-            if attempt == MAX_RETRIES:
-                print(f"⛔ Giving up on {link} after {MAX_RETRIES} attempts.")
+
+    print(f"❌ All proxy attempts failed for {link}")
