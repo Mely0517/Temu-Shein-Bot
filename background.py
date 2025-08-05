@@ -5,20 +5,23 @@ from discord.ext import tasks
 from shein import boost_shein_link
 from temu import boost_temu_link
 
+# Store links and stats
 shein_links = set()
 temu_links = set()
 boosted_links = set()
 boost_stats = {"shein": 0, "temu": 0}
 
+# Load SHEIN & TEMU links from files
 def load_links():
-    """Load links from text files."""
     global shein_links, temu_links
     try:
-        shein_links = set(line.strip() for line in open("shein_links.txt") if line.strip())
-        temu_links = set(line.strip() for line in open("temu_links.txt") if line.strip())
+        shein_links = set(open("shein_links.txt").read().splitlines())
     except FileNotFoundError:
-        print("⚠️ shein_links.txt or temu_links.txt missing.")
         shein_links = set()
+
+    try:
+        temu_links = set(open("temu_links.txt").read().splitlines())
+    except FileNotFoundError:
         temu_links = set()
 
 def reload_links():
@@ -27,17 +30,17 @@ def reload_links():
 def get_boost_stats():
     return boost_stats
 
-# Load links and boosted log
+# Load data at start
 load_links()
 try:
-    boosted_links = set(line.strip() for line in open("boost_log.txt") if line.strip())
+    boosted_links = set(open("boost_log.txt").read().splitlines())
 except FileNotFoundError:
     boosted_links = set()
 
-@tasks.loop(seconds=20)  # Loop runs every 20 seconds
+@tasks.loop(seconds=15)
 async def background_boost_loop(bot):
-    """Boosts links in the background continuously."""
-    # SHEIN boosting
+    """ Continuously boosts links in the background """
+    # Boost SHEIN links
     for idx, link in enumerate(list(shein_links), start=1):
         if link in boosted_links:
             continue
@@ -56,9 +59,9 @@ async def background_boost_loop(bot):
             if channel:
                 await channel.send(f"❌ Failed to boost SHEIN link: {link} — {e}")
 
-        await asyncio.sleep(random.uniform(15, 30))  # Random delay between boosts
+        await asyncio.sleep(random.uniform(10, 20))
 
-    # TEMU boosting
+    # Boost TEMU links
     for idx, link in enumerate(list(temu_links), start=1):
         if link in boosted_links:
             continue
@@ -77,4 +80,4 @@ async def background_boost_loop(bot):
             if channel:
                 await channel.send(f"❌ Failed to boost TEMU link: {link} — {e}")
 
-        await asyncio.sleep(random.uniform(15, 30))  # Random delay between boosts
+        await asyncio.sleep(random.uniform(10, 20))
