@@ -2,20 +2,20 @@ import asyncio
 from pyppeteer import launch
 import random
 from proxy_utils import get_random_proxy
-from pyppeteer_stealth import stealth
+from pyppeteer_stealth import stealth  # From PyPI, no GitHub clone
 
 async def boost_shein_link(link, discord_channel=None):
     print(f"⏳ Starting SHEIN boost for: {link}")
-
+    
     proxy = get_random_proxy()
-    proxy_server = f"{proxy['ip']}:{proxy['port']}"
+    proxy_server = f"{proxy['ip']}:{proxy['port']}"  # ✅ No username/password here
 
     browser_args = [
         '--no-sandbox',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-blink-features=AutomationControlled',
-        f'--proxy-server={proxy_server}',  # ✅ Only IP:Port here
+        f'--proxy-server={proxy_server}',
         '--window-size=1920,1080',
     ]
 
@@ -23,17 +23,18 @@ async def boost_shein_link(link, discord_channel=None):
         browser = await launch({
             'headless': True,
             'args': browser_args,
-            'ignoreHTTPSErrors': True
+            'ignoreHTTPSErrors': True,
         })
 
         page = await browser.newPage()
-        await stealth(page)
 
-        # ✅ Authenticate proxy with username/password
+        # ✅ Authenticate proxy credentials here
         await page.authenticate({
-            'username': proxy['username'],
-            'password': proxy['password']
+            "username": proxy['username'],
+            "password": proxy['password']
         })
+
+        await stealth(page)
 
         await page.setUserAgent(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
