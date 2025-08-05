@@ -11,24 +11,17 @@ boosted_links = set()
 boost_stats = {"shein": 0, "temu": 0}
 
 def load_links():
-    """Load SHEIN and TEMU links from files."""
+    """Load SHEIN and TEMU links from text files."""
     global shein_links, temu_links
-    try:
-        shein_links = set(open("shein_links.txt").read().splitlines())
-    except FileNotFoundError:
-        shein_links = set()
-
-    try:
-        temu_links = set(open("temu_links.txt").read().splitlines())
-    except FileNotFoundError:
-        temu_links = set()
+    shein_links = set(open("shein_links.txt").read().splitlines())
+    temu_links = set(open("temu_links.txt").read().splitlines())
 
 def reload_links():
-    """Reload link lists from files."""
+    """Reload links from files."""
     load_links()
 
 def get_boost_stats():
-    """Return current boost statistics."""
+    """Get total boost counts."""
     return boost_stats
 
 # Initial load
@@ -40,13 +33,12 @@ except FileNotFoundError:
 
 @tasks.loop(seconds=15)
 async def background_boost_loop(bot):
-    """Loop that boosts links continuously in the background."""
-    # Boost SHEIN links
+    # SHEIN LINKS
     for idx, link in enumerate(list(shein_links), start=1):
         if link in boosted_links:
             continue
 
-        channel = discord.utils.get(bot.get_all_channels(), name="general")
+        channel = discord.utils.get(bot.get_all_channels(), name="general")  
         if channel:
             await channel.send(f"📢 Boosting SHEIN link ({idx}/{len(shein_links)}): {link}")
 
@@ -54,17 +46,15 @@ async def background_boost_loop(bot):
             await boost_shein_link(link, channel)
             boosted_links.add(link)
             boost_stats["shein"] += 1
-            with open("boost_log.txt", "a") as f:
-                f.write(link + "\n")
+            open("boost_log.txt", "a").write(link + "\n")
         except Exception as e:
-            with open("boost_failures.txt", "a") as f:
-                f.write(f"{link} | Error: {e}\n")
+            open("boost_failures.txt", "a").write(f"{link} | Error: {e}\n")
             if channel:
                 await channel.send(f"❌ Failed to boost SHEIN link: {link} — {e}")
 
-        await asyncio.sleep(random.uniform(10, 20))  # Random delay
+        await asyncio.sleep(random.uniform(10, 20))
 
-    # Boost TEMU links
+    # TEMU LINKS
     for idx, link in enumerate(list(temu_links), start=1):
         if link in boosted_links:
             continue
@@ -77,12 +67,10 @@ async def background_boost_loop(bot):
             await boost_temu_link(link, channel)
             boosted_links.add(link)
             boost_stats["temu"] += 1
-            with open("boost_log.txt", "a") as f:
-                f.write(link + "\n")
+            open("boost_log.txt", "a").write(link + "\n")
         except Exception as e:
-            with open("boost_failures.txt", "a") as f:
-                f.write(f"{link} | Error: {e}\n")
+            open("boost_failures.txt", "a").write(f"{link} | Error: {e}\n")
             if channel:
                 await channel.send(f"❌ Failed to boost TEMU link: {link} — {e}")
 
-        await asyncio.sleep(random.uniform(10, 20))  # Random delay
+        await asyncio.sleep(random.uniform(10, 20))
