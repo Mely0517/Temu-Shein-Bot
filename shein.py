@@ -65,3 +65,4 @@ async def boost_shein_link(link, discord_channel=None):
         print(error_msg)
         if discord_channel:
             await discord_channel.send(error_msg)
+            
