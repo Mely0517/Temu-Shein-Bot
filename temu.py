@@ -1,18 +1,19 @@
 import asyncio
-from pyppeteer import launch
 import random
+from pyppeteer import launch
 from proxy_utils import get_random_proxy
 from pyppeteer_stealth import stealth
 
-MAX_RETRIES = 3  # Retry each link this many times before giving up
+MAX_RETRIES = 3  # Retry boosting up to 3 times if it fails
 
 async def boost_temu_link(link, discord_channel=None):
     print(f"⏳ Starting TEMU boost for: {link}")
-    
+
     for attempt in range(1, MAX_RETRIES + 1):
         proxy = get_random_proxy()
-        proxy_auth_url = f"http://{proxy['username']}:{proxy['password']}@{proxy['ip']}:{proxy['port']}"
         print(f"🌐 Using proxy {proxy['ip']}:{proxy['port']} (Attempt {attempt}/{MAX_RETRIES})")
+
+        proxy_auth_url = f"http://{proxy['username']}:{proxy['password']}@{proxy['ip']}:{proxy['port']}"
 
         browser_args = [
             '--no-sandbox',
@@ -34,16 +35,18 @@ async def boost_temu_link(link, discord_channel=None):
             await stealth(page)
 
             await page.setUserAgent(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
             )
 
             await page.goto(link, timeout=60000)
             await page.waitForSelector('body', timeout=10000)
-            await asyncio.sleep(random.uniform(3, 5))
 
+            # Simulate scrolling
             for _ in range(random.randint(1, 3)):
-                await page.evaluate("""() => { window.scrollBy(0, window.innerHeight * 0.5); }""")
+                await page.evaluate("""() => {
+                    window.scrollBy(0, window.innerHeight * 0.5);
+                }""")
                 await asyncio.sleep(random.uniform(1, 2))
 
             await asyncio.sleep(random.uniform(3, 6))
@@ -53,16 +56,11 @@ async def boost_temu_link(link, discord_channel=None):
             print(msg)
             if discord_channel:
                 await discord_channel.send(msg)
-            return  # Success → exit function
+            return  # Success, stop retrying
 
         except Exception as e:
             error_msg = f"❌ Error with {link} on attempt {attempt}: {e}"
             print(error_msg)
             if discord_channel:
                 await discord_channel.send(error_msg)
-            await asyncio.sleep(2)
-
-    fail_msg = f"⛔ Failed to boost TEMU link after {MAX_RETRIES} attempts: {link}"
-    print(fail_msg)
-    if discord_channel:
-        await discord_channel.send(fail_msg)
+            await asyncio.sleep(2)  # Short wait before retry
