@@ -2,13 +2,13 @@ import asyncio
 from pyppeteer import launch
 import random
 from proxy_utils import get_random_proxy
-from pyppeteer_stealth import stealth  # From PyPI, no GitHub clone
+from pyppeteer_stealth import stealth  # ✅ From PyPI, no GitHub clone
 
 async def boost_temu_link(link, discord_channel=None):
     print(f"⏳ Starting TEMU boost for: {link}")
     
     proxy = get_random_proxy()
-    proxy_server = f"{proxy['ip']}:{proxy['port']}"  # ✅ No username/password here
+    proxy_server = f"http://{proxy['ip']}:{proxy['port']}"
 
     browser_args = [
         '--no-sandbox',
@@ -28,10 +28,10 @@ async def boost_temu_link(link, discord_channel=None):
 
         page = await browser.newPage()
 
-        # ✅ Authenticate proxy credentials here
+        # ✅ Authenticate after connecting
         await page.authenticate({
-            "username": proxy['username'],
-            "password": proxy['password']
+            'username': proxy['username'],
+            'password': proxy['password']
         })
 
         await stealth(page)
