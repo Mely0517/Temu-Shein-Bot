@@ -1,69 +1,67 @@
 import asyncio
 from pyppeteer import launch
-import random
-from proxy_utils import get_random_proxy
 from pyppeteer_stealth import stealth
+import random
+import string
 
-async def boost_shein_link(link, discord_channel=None):
-    print(f"⏳ Starting SHEIN boost for: {link}")
+# ✅ Replace these with your actual SHEIN links
+SHEIN_LINKS = [
+    "https://onelink.shein.com/15/4wo1q068xvyy",
+    # add more if needed
+]
 
-    # Pick a random proxy from proxy_utils.py
-    proxy = get_random_proxy()
-    print(f"🌐 Using proxy {proxy['ip']}:{proxy['port']}")
+# ✅ Your proxy credentials
+PROXY_HOST = "geo.iproyal.com"
+PROXY_PORT = "12321"
+PROXY_USER = "YOUR_PROXY_USERNAME"
+PROXY_PASS = "YOUR_PROXY_PASSWORD"
 
-    browser_args = [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-blink-features=AutomationControlled",
-        f"--proxy-server=http://{proxy['ip']}:{proxy['port']}",
-        "--window-size=1920,1080",
-    ]
+# Function to create a random user-agent string
+def get_user_agent():
+    return (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
+    )
 
+async def boost_shein_link(link):
+    proxy = f"http://{PROXY_USER}:{PROXY_PASS}@{PROXY_HOST}:{PROXY_PORT}"
+    print(f"🌐 Using proxy {PROXY_HOST}:{PROXY_PORT}")
     try:
-        browser = await launch(
-            {
-                "headless": True,
-                "args": browser_args,
-                "ignoreHTTPSErrors": True,
-            }
-        )
+        browser = await launch({
+            'headless': True,
+            'args': [
+                f'--proxy-server=http://{PROXY_HOST}:{PROXY_PORT}',
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--window-size=1920,1080'
+            ],
+        })
 
         page = await browser.newPage()
 
-        # Authenticate proxy if needed
-        if proxy.get("username") and proxy.get("password"):
-            await page.authenticate({
-                "username": proxy["username"],
-                "password": proxy["password"]
-            })
+        # Authenticate proxy
+        await page.authenticate({
+            'username': PROXY_USER,
+            'password': PROXY_PASS
+        })
 
+        # Stealth and user-agent
         await stealth(page)
-
-        await page.setUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/120.0.0.0 Safari/537.36"
-        )
+        await page.setUserAgent(get_user_agent())
 
         await page.goto(link, timeout=60000)
-        await page.waitForSelector("body", timeout=10000)  # Ensure page loads
-
-        # Scroll like a human
-        for _ in range(random.randint(1, 3)):
-            await page.evaluate("() => { window.scrollBy(0, window.innerHeight * 0.5); }")
-            await asyncio.sleep(random.uniform(1, 2))
-
-        await asyncio.sleep(random.uniform(3, 6))
+        await asyncio.sleep(random.uniform(5, 10))  # simulate reading time
+        print(f"✅ Boosted SHEIN link: {link}")
         await browser.close()
-
-        msg = f"✅ Boost successful for SHEIN link: {link}"
-        print(msg)
-        if discord_channel:
-            await discord_channel.send(msg)
-
     except Exception as e:
-        error_msg = f"❌ Error with SHEIN link {link}: {e}"
-        print(error_msg)
-        if discord_channel:
-            await discord_channel.send(error_msg)
+        print(f"❌ Error with {link}: {e}")
+
+async def run_all():
+    for link in SHEIN_LINKS:
+        await boost_shein_link(link)
+        await asyncio.sleep(2)  # slight delay between boosts
+
+if __name__ == "__main__":
+    asyncio.run(run_all())
