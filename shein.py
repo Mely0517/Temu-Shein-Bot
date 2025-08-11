@@ -1,67 +1,94 @@
+# shein.py
 import asyncio
+import random
 from pyppeteer import launch
 from pyppeteer_stealth import stealth
-import random
-import string
+from proxy_utils import get_random_proxy
 
-# ✅ Replace these with your actual SHEIN links
-SHEIN_LINKS = [
-    "https://onelink.shein.com/15/4wo1q068xvyy",
-    # add more if needed
-]
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/114.0.0.0 Safari/537.36"
+)
 
-# ✅ Your proxy credentials
-PROXY_HOST = "geo.iproyal.com"
-PROXY_PORT = "12321"
-PROXY_USER = "YOUR_PROXY_USERNAME"
-PROXY_PASS = "YOUR_PROXY_PASSWORD"
+async def _open_page_with_proxy():
+    """Launch Chromium with proxy and return (browser, page)."""
+    p = get_random_proxy()
 
-# Function to create a random user-agent string
-def get_user_agent():
-    return (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    )
+    launch_args = [
+        f"--proxy-server=http://{p['ip']}:{p['port']}",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-blink-features=AutomationControlled",
+        "--window-size=1280,800",
+    ]
 
-async def boost_shein_link(link):
-    proxy = f"http://{PROXY_USER}:{PROXY_PASS}@{PROXY_HOST}:{PROXY_PORT}"
-    print(f"🌐 Using proxy {PROXY_HOST}:{PROXY_PORT}")
-    try:
-        browser = await launch({
-            'headless': True,
-            'args': [
-                f'--proxy-server=http://{PROXY_HOST}:{PROXY_PORT}',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--window-size=1920,1080'
-            ],
-        })
+    browser = await launch({
+        "headless": True,
+        "args": launch_args,
+        "ignoreHTTPSErrors": True,
+        "handleSIGINT": False,
+        "handleSIGTERM": False,
+        "handleSIGHUP": False,
+    })
 
-        page = await browser.newPage()
+    page = await browser.newPage()
 
-        # Authenticate proxy
-        await page.authenticate({
-            'username': PROXY_USER,
-            'password': PROXY_PASS
-        })
+    # ✅ Proper proxy authentication (fixes ERR_PROXY_AUTH_UNSUPPORTED)
+    if p.get("username") and p.get("password"):
+        await page.authenticate({"username": p["username"], "password": p["password"]})
 
-        # Stealth and user-agent
-        await stealth(page)
-        await page.setUserAgent(get_user_agent())
+    await stealth(page)
+    await page.setUserAgent(USER_AGENT)
+    await page.setViewport({"width": 1280, "height": 800})
+    return browser, page
 
-        await page.goto(link, timeout=60000)
-        await asyncio.sleep(random.uniform(5, 10))  # simulate reading time
-        print(f"✅ Boosted SHEIN link: {link}")
-        await browser.close()
-    except Exception as e:
-        print(f"❌ Error with {link}: {e}")
+async def boost_shein_link(link: str, discord_channel=None):
+    """Open a SHEIN invite link with stealth + proxy, with retries."""
+    attempts = 3
 
-async def run_all():
-    for link in SHEIN_LINKS:
-        await boost_shein_link(link)
-        await asyncio.sleep(2)  # slight delay between boosts
+    for attempt in range(1, attempts + 1):
+        browser = None
+        try:
+            if discord_channel:
+                await discord_channel.send(f"⏳ SHEIN: opening (attempt {attempt}/{attempts})")
 
-if __name__ == "__main__":
-    asyncio.run(run_all())
+            browser, page = await _open_page_with_proxy()
+
+            # Load the page (shein onelink may redirect)
+            await page.goto(link, timeout=60000, waitUntil="domcontentloaded")
+            await page.waitForSelector("body", timeout=10000)
+
+            # Human-like dwell & scroll
+            await asyncio.sleep(random.uniform(2.5, 4.0))
+            for _ in range(random.randint(2, 4)):
+                await page.evaluate("() => window.scrollBy(0, Math.floor(window.innerHeight * 0.6))")
+                await asyncio.sleep(random.uniform(1.0, 2.0))
+
+            await asyncio.sleep(random.uniform(3.0, 5.0))
+
+            await browser.close()
+            msg = f"✅ SHEIN boost successful: {link}"
+            print(msg)
+            if discord_channel:
+                await discord_channel.send(msg)
+            return  # success, stop retrying
+
+        except Exception as e:
+            if browser:
+                try:
+                    await browser.close()
+                except Exception:
+                    pass
+            err = f"❌ SHEIN error (attempt {attempt}/{attempts}): {e}"
+            print(err)
+            if discord_channel:
+                await discord_channel.send(err)
+            await asyncio.sleep(1 + attempt)  # simple backoff
+
+    # All attempts failed
+    fail_msg = f"❌ SHEIN failed after {attempts} attempts: {link}"
+    print(fail_msg)
+    if discord_channel:
+        await discord_channel.send(fail_msg)
