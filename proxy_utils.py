@@ -4,13 +4,12 @@ PROXIES = [
     {
         "ip": "geo.iproyal.com",
         "port": "12321",
-        "username": "melitza0517",
-        "password": "PpCMxtvpv1VpA",
+        "username": "perezjones.melitza@gmail.com",
+        "password": "Mpj#1184",
         "country": "US"
     },
-    # Add more proxies here if you have them
+    # You can add more proxies here if needed
 ]
 
 def get_random_proxy():
-    """Returns a random proxy from the list."""
     return random.choice(PROXIES)
