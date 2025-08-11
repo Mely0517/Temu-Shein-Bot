@@ -1,23 +1,26 @@
+# shein.py
+import os
 import asyncio
 import random
-from typing import Optional, Dict
-
 from pyppeteer import launch
-from pyppeteer.errors import NetworkError, TimeoutError, PageError
 from pyppeteer_stealth import stealth
-from proxy_utils import get_random_proxy
 
+# ── Proxy config from environment (Render → Environment → Add Secrets)
+PROXY_HOST = os.getenv("PROXY_HOST", "geo.iproyal.com")
+PROXY_PORT = os.getenv("PROXY_PORT", "12321")
+PROXY_USER = os.getenv("PROXY_USER")       # set this in Render
+PROXY_PASS = os.getenv("PROXY_PASS")       # set this in Render
 
-async def _open_with_proxy(link: str, proxy: Dict, discord_channel=None) -> None:
-    """
-    Launch Chromium with a proxy, authenticate the page, visit the link, and
-    simulate some real user behavior.
-    """
-    proxy_arg = f"--proxy-server=http://{proxy['ip']}:{proxy['port']}"
+# Small helper for human-ish delays
+def jitter(a: float, b: float) -> float:
+    return random.uniform(a, b)
+
+async def _open_with_proxy(link: str):
+    # NOTE: DO NOT include user:pass in --proxy-server
+    proxy_arg = f"--proxy-server=http://{PROXY_HOST}:{PROXY_PORT}"
 
     browser = await launch({
         "headless": True,
-        "ignoreHTTPSErrors": True,
         "args": [
             "--no-sandbox",
             "--disable-setuid-sandbox",
@@ -26,78 +29,66 @@ async def _open_with_proxy(link: str, proxy: Dict, discord_channel=None) -> None
             "--window-size=1920,1080",
             proxy_arg,
         ],
+        "ignoreHTTPSErrors": True,
+        "defaultViewport": {"width": 1366, "height": 768},
     })
 
-    try:
-        page = await browser.newPage()
-        await stealth(page)
+    page = await browser.newPage()
+    await stealth(page)
 
-        # Authenticate to the proxy (this is what fixes ERR_PROXY_AUTH_UNSUPPORTED)
-        if proxy.get("username") and proxy.get("password"):
-            await page.authenticate({
-                "username": proxy["username"],
-                "password": proxy["password"]
-            })
+    # Authenticate to the proxy here (this is the fix)
+    if PROXY_USER and PROXY_PASS:
+        await page.authenticate({"username": PROXY_USER, "password": PROXY_PASS})
 
-        # Reasonable desktop UA
-        await page.setUserAgent(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-        )
+    await page.setUserAgent(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
 
-        # Tighter navigation timeout and wait for body to ensure render
-        await page.goto(link, timeout=45_000, waitUntil="domcontentloaded")
-        await page.waitForSelector("body", timeout=10_000)
+    # Open the link
+    await page.goto(link, {"waitUntil": "domcontentloaded", "timeout": 60000})
 
-        # Small random dwell + scrolls
-        await asyncio.sleep(random.uniform(2.0, 4.0))
-        for _ in range(random.randint(1, 3)):
-            await page.evaluate("() => window.scrollBy(0, Math.floor(window.innerHeight*0.6));")
-            await asyncio.sleep(random.uniform(0.8, 1.6))
+    # A little scrolling + dwell to look human
+    for _ in range(random.randint(2, 4)):
+        await page.evaluate("() => window.scrollBy(0, Math.floor(window.innerHeight*0.6))")
+        await asyncio.sleep(jitter(0.8, 1.6))
 
-        await asyncio.sleep(random.uniform(1.5, 3.0))
+    await asyncio.sleep(jitter(2.5, 5.0))
+    await browser.close()
 
-    finally:
-        await browser.close()
-
-
-async def boost_shein_link(link: str, discord_channel: Optional[object] = None):
-    """
-    Tries up to 3 times with a fresh proxy each time.
-    Sends concise progress/error messages to Discord if channel is provided.
-    """
-    attempts = 3
-    for attempt in range(1, attempts + 1):
-        proxy = get_random_proxy()
-        msg = f"🧑‍💻 SHEIN: opening (attempt {attempt}/{attempts}) with proxy {proxy['ip']}:{proxy['port']}"
-        print(msg)
-        if discord_channel:
-            await discord_channel.send(msg)
-
+async def boost_shein_link(link: str, discord_channel=None):
+    # Try up to 3 times with short backoff
+    last_err = None
+    for attempt in range(1, 4):
         try:
-            await _open_with_proxy(link, proxy, discord_channel)
-            ok = f"✅ SHEIN success: {link}"
-            print(ok)
             if discord_channel:
-                await discord_channel.send(ok)
+                await discord_channel.send(
+                    f"🧑‍💻 SHEIN: opening (attempt {attempt}/3) with proxy {PROXY_HOST}:{PROXY_PORT}"
+                )
+            await _open_with_proxy(link)
+            msg = f"✅ SHEIN boost successful: {link}"
+            print(msg)
+            if discord_channel:
+                await discord_channel.send(msg)
             return
-
-        except (NetworkError, TimeoutError, PageError) as e:
-            err = f"❌ SHEIN error (attempt {attempt}/{attempts}): {e} at {link}"
-            print(err)
-            if discord_channel:
-                await discord_channel.send(err)
-            # brief backoff then retry
-            await asyncio.sleep(3 + attempt)
-
         except Exception as e:
-            err = f"❌ SHEIN unexpected error: {type(e).__name__}: {e}"
-            print(err)
+            last_err = e
+            err_text = str(e)
+            print(f"[shein] attempt {attempt} error: {err_text}")
             if discord_channel:
-                await discord_channel.send(err)
-            await asyncio.sleep(3 + attempt)
+                await discord_channel.send(
+                    f"❌ SHEIN error (attempt {attempt}/3): {err_text[:400]} at {link}"
+                )
+            await asyncio.sleep(jitter(2, 5))
 
-    fail = f"❌ SHEIN failed after {attempts} attempts: {link}"
-    print(fail)
+    # All attempts failed
+    fail_msg = f"❌ SHEIN failed after 3 attempts: {link}"
+    print(fail_msg, last_err)
     if discord_channel:
-        await discord_channel.send(fail)
+        await discord_channel.send(fail_msg)
+    # Also log to file so the background loop can skip next time
+    try:
+        with open("boost_failures.txt", "a") as f:
+            f.write(f"{link} | {last_err}\n")
+    except:
+        pass
