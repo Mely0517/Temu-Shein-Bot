@@ -1,5 +1,6 @@
 # main.py
 import os
+import re
 import discord
 from discord.ext import commands
 from background import background_boost_loop, get_boost_stats, reload_links
@@ -13,6 +14,9 @@ if not TOKEN:
 intents = discord.Intents.default()
 intents.message_content = True  # requires Message Content Intent enabled in Dev Portal
 bot = commands.Bot(command_prefix="!", intents=intents)
+
+# Simple URL detector (grabs http/https up to whitespace)
+URL_RE = re.compile(r'(https?://\S+)', re.IGNORECASE)
 
 
 @bot.event
@@ -38,19 +42,44 @@ async def on_resumed():
     print("✅ Discord gateway session resumed successfully.")
 
 
-@bot.command()
-async def boost(ctx, link: str):
-    await ctx.send(f"🚀 Boosting: {link}")
-    # Lazy import to avoid startup errors if one module fails
+# Accept the entire remainder of the message (so captions/newlines work)
+@bot.command(name="boost", help="Boost a SHEIN/TEMU link. Usage: !boost <url> or paste text with a url")
+async def boost(ctx, *, link_text: str = ""):
+    # Fallback: if parser gave us nothing, use the full message content
+    if not link_text:
+        link_text = ctx.message.content
+
+    urls = URL_RE.findall(link_text)
+    if not urls:
+        await ctx.reply("❗ I didn’t see any link. Please send `!boost <url>` on one line or include a URL in your message.")
+        return
+
+    # Deduplicate while preserving order
+    seen = set()
+    unique_urls = []
+    for u in urls:
+        if u not in seen:
+            seen.add(u)
+            unique_urls.append(u)
+
+    await ctx.reply(f"✅ Found {len(unique_urls)} link(s). Starting boost…")
+
+    # Lazy imports to avoid startup errors if one module fails
     from shein import boost_shein_link
     from temu import boost_temu_link
 
-    if "shein.com" in link:
-        await boost_shein_link(link, ctx.channel)
-    elif "temu.com" in link:
-        await boost_temu_link(link, ctx.channel)
-    else:
-        await ctx.send("❌ Invalid link. Use a SHEIN or TEMU link.")
+    for u in unique_urls:
+        try:
+            if "shein.com" in u:
+                await ctx.send(f"🧑‍💻 SHEIN: working on {u}")
+                await boost_shein_link(u, ctx.channel)
+            elif "temu.com" in u:
+                await ctx.send(f"🧑‍💻 TEMU: working on {u}")
+                await boost_temu_link(u, ctx.channel)
+            else:
+                await ctx.send(f"❌ Skipping non-supported link: {u}")
+        except Exception as e:
+            await ctx.send(f"❌ Error with {u}: {e}")
 
 
 @bot.command()
