@@ -1,9 +1,34 @@
+# Byte-compiled / cache files
 __pycache__/
-*.pyc
-.env
-.DS_Store
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Render / Pyppeteer Chromium downloads
+pyppeteer/
+.local-chromium/
+*/.local-chromium/*
+/opt/render/.local/share/pyppeteer/
+
+# Logs and temp files
 *.log
-*.sqlite3
-.vscode/
-node_modules/
-*.db
+*.txt
+boost_failures.txt
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Python tooling
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Secrets
+.env
+.env.local
