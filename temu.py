@@ -31,7 +31,11 @@ async def _launch_with_proxy(proxy: Dict, scheme: str):
             "--disable-web-security",
         ],
     })
-    page = await browser.newPage()
+    # Set a nav timeout; pyppeteer doesn't have setDefaultTimeout()
+try:
+    page.setDefaultNavigationTimeout(90000)  # 90s
+except AttributeError:
+    pass
     if proxy.get("username") and proxy.get("password"):
         await page.authenticate({"username": proxy["username"], "password": proxy["password"]})
     await stealth(page)
