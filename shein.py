@@ -7,14 +7,14 @@ from pyppeteer import launch
 from pyppeteer_stealth import stealth
 from proxy_utils import get_random_proxy
 
-# Serialize SHEIN boosts to prevent overlapping browser closures
+# Serialize SHEIN boosts so background + manual don't overlap
 BOOST_LOCK = asyncio.Lock()
 
 def jitter(a: float, b: float) -> float:
     return random.uniform(a, b)
 
 def _proxy_arg(proxy: Dict, scheme: str) -> str:
-    # Chromium is happiest with host:port for HTTP; include scheme for socks5
+    # Use host:port for HTTP; include scheme for socks5
     return (f"--proxy-server={scheme}://{proxy['ip']}:{proxy['port']}"
             if scheme in ("socks5", "socks5h")
             else f"--proxy-server={proxy['ip']}:{proxy['port']}")
@@ -43,17 +43,15 @@ async def _launch_with_proxy(proxy: Dict, scheme: str):
         ],
         "defaultViewport": {"width": 1366, "height": 768},
     })
-    # Set a nav timeout; pyppeteer doesn't have setDefaultTimeout()
-try:
-    page.setDefaultNavigationTimeout(90000)  # 90s
-except AttributeError:
-    pass
+    page = await browser.newPage()
 
-    # Apply timeouts early
-    page.setDefaultNavigationTimeout(90000)
-    page.setDefaultTimeout(45000)
+    # Set nav timeout (pyppeteer doesn't have setDefaultTimeout)
+    try:
+        page.setDefaultNavigationTimeout(90000)
+    except AttributeError:
+        pass
 
-    # Authenticate if creds present
+    # 🔐 Authenticate if creds are present (INSIDE the function!)
     if proxy.get("username") and proxy.get("password"):
         await page.authenticate({"username": proxy["username"], "password": proxy["password"]})
 
@@ -66,12 +64,11 @@ except AttributeError:
 
 async def _open_with_proxy(link: str, proxy: Dict):
     """
-    Try with proxy's preferred scheme first; on proxy-setup errors,
+    Try proxy's preferred scheme first; on proxy-setup errors,
     fall back to the alternate scheme (http <-> socks5). Retry on transient crashes.
     """
     preferred = (proxy.get("scheme") or "http").lower()
     candidates = [preferred] + (["socks5"] if not preferred.startswith("socks") else ["http"])
-
     last_err: Optional[Exception] = None
 
     for scheme in candidates:
@@ -95,7 +92,6 @@ async def _open_with_proxy(link: str, proxy: Dict):
             return  # success
         except Exception as e:
             last_err = e
-            # Clean close if possible
             try:
                 if browser:
                     await browser.close()
@@ -103,7 +99,6 @@ async def _open_with_proxy(link: str, proxy: Dict):
                 pass
 
             msg = str(e)
-            # Retry if it's likely a proxy/nav flake; otherwise break
             retryable = any(x in msg for x in [
                 "Target closed",
                 "ERR_TUNNEL_CONNECTION_FAILED",
@@ -118,7 +113,6 @@ async def _open_with_proxy(link: str, proxy: Dict):
             else:
                 break
 
-    # If we get here, all attempts failed
     raise last_err if last_err else RuntimeError("Unknown proxy error")
 
 async def boost_shein_link(link: str, discord_channel=None):
