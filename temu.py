@@ -10,6 +10,7 @@ from proxy_utils import get_random_proxy
 
 
 async def _open_with_proxy(link: str, proxy: Dict, discord_channel=None) -> None:
+    # Expect keys: ip, port, username (opt), password (opt)
     proxy_arg = f"--proxy-server=http://{proxy['ip']}:{proxy['port']}"
 
     browser = await launch({
@@ -32,7 +33,7 @@ async def _open_with_proxy(link: str, proxy: Dict, discord_channel=None) -> None
     try:
         page = await browser.newPage()
 
-        # Proxy authentication FIRST
+        # Authenticate to the proxy FIRST (before any navigation)
         if proxy.get("username") and proxy.get("password"):
             await page.authenticate({
                 "username": proxy["username"],
@@ -46,14 +47,14 @@ async def _open_with_proxy(link: str, proxy: Dict, discord_channel=None) -> None
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
-        # Warm-up (about:blank ensures auth applies cleanly)
+        # Warm-up so auth is “locked in”
         await page.goto("about:blank")
 
-        # Now open the real link
+        # Open the real link
         await page.goto(link, timeout=60_000, waitUntil="networkidle2")
         await page.waitForSelector("body", timeout=10_000)
 
-        # Human-like scrolling + dwell
+        # Human-like behavior
         await asyncio.sleep(random.uniform(2.0, 4.0))
         for _ in range(random.randint(1, 3)):
             await page.evaluate(
@@ -87,7 +88,7 @@ async def boost_temu_link(link: str, discord_channel: Optional[object] = None):
 
         except (NetworkError, TimeoutError, PageError) as e:
             last_err = str(e)
-            if "ERR_TUNNEL_CONNECTION_FAILED" in last_err:
+            if "ERR_TUNNEL_CONNECTION_FAILED" in last_err or "ERR_PROXY" in last_err:
                 last_err = "Proxy tunnel failed (check proxy username/password/host/port)."
             err = f"❌ TEMU error (attempt {attempt}/{attempts}): {last_err} at {link}"
             print(err)
