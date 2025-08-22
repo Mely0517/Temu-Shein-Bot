@@ -1,6 +1,13 @@
+# requirements.txt
+
+# Discord bot framework
 discord.py==2.3.2
+
+# Headless browser automation
 pyppeteer==1.0.2
 pyppeteer-stealth==2.7.4
-aiohttp==3.12.15
-urllib3==1.26.20
-tqdm==4.67.1
+
+# Utilities
+aiohttp==3.9.5
+asyncio==3.4.3
+requests==2.32.3
