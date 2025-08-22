@@ -1,7 +1,9 @@
-https://onelink.shein.com/15/4wnzgw0i5vd1
-https://onelink.shein.com/15/4wo09a2iddkz
-https://onelink.shein.com/15/4wo0m5qrz6t2
-https://onelink.shein.com/15/4wo10asr3g9z
-https://onelink.shein.com/15/4wo1gmrylp1q
-https://onelink.shein.com/15/4wo1q068xvyy
-https://onelink.shein.com/15/4wo1tsbdoyz7
+# SHEIN referral links
+# Add one link per line.
+# Lines starting with # are ignored.
+
+# Example SHEIN link:
+https://onelink.shein.com/15/4wnrsnoqjfo6
+
+# Add more below:
+# https://onelink.shein.com/15/xxxxxxx
