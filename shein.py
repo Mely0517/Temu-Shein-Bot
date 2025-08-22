@@ -5,18 +5,20 @@ import random
 from pyppeteer import launch
 from pyppeteer_stealth import stealth
 
-# ── Proxy config from environment (Render → Environment → Add Secrets)
+PROXY_SCHEME = os.getenv("PROXY_SCHEME", "http").lower()
+if PROXY_SCHEME not in {"http", "socks5", "socks5h"}:
+    PROXY_SCHEME = "http"
+
 PROXY_HOST = os.getenv("PROXY_HOST", "geo.iproyal.com")
 PROXY_PORT = os.getenv("PROXY_PORT", "12321")
-PROXY_USER = os.getenv("PROXY_USER")       # set in Render
-PROXY_PASS = os.getenv("PROXY_PASS")       # set in Render
+PROXY_USER = os.getenv("PROXY_USER")
+PROXY_PASS = os.getenv("PROXY_PASS")
 
-# Small helper for human-ish delays
 def jitter(a: float, b: float) -> float:
     return random.uniform(a, b)
 
 async def _open_with_proxy(link: str):
-    proxy_arg = f"--proxy-server=http://{PROXY_HOST}:{PROXY_PORT}"
+    proxy_arg = f"--proxy-server={PROXY_SCHEME}://{PROXY_HOST}:{PROXY_PORT}"
 
     browser = await launch({
         "headless": True,
@@ -39,7 +41,6 @@ async def _open_with_proxy(link: str):
     try:
         page = await browser.newPage()
 
-        # Authenticate to the proxy FIRST
         if PROXY_USER and PROXY_PASS:
             await page.authenticate({"username": PROXY_USER, "password": PROXY_PASS})
 
@@ -50,24 +51,16 @@ async def _open_with_proxy(link: str):
             "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         )
 
-        # Warm-up to ensure auth is applied
         await page.goto("about:blank")
-
-        # Navigate to SHEIN link
         await page.goto(link, {"waitUntil": "networkidle2", "timeout": 90000})
 
-        # Human-like scrolling
         for _ in range(random.randint(2, 4)):
-            await page.evaluate(
-                "() => window.scrollBy(0, Math.floor(window.innerHeight*0.6))"
-            )
+            await page.evaluate("() => window.scrollBy(0, Math.floor(window.innerHeight*0.6))")
             await asyncio.sleep(jitter(0.8, 1.6))
 
         await asyncio.sleep(jitter(2.5, 5.0))
-
     finally:
         await browser.close()
-
 
 async def boost_shein_link(link: str, discord_channel=None):
     last_err = None
@@ -75,31 +68,22 @@ async def boost_shein_link(link: str, discord_channel=None):
         try:
             if discord_channel:
                 await discord_channel.send(
-                    f"🧑‍💻 SHEIN: opening (attempt {attempt}/3) with proxy {PROXY_HOST}:{PROXY_PORT}"
+                    f"🧑‍💻 SHEIN: opening (attempt {attempt}/3) with proxy {PROXY_SCHEME}://{PROXY_HOST}:{PROXY_PORT}"
                 )
             await _open_with_proxy(link)
             msg = f"✅ SHEIN boost successful: {link}"
-            print(msg)
             if discord_channel:
                 await discord_channel.send(msg)
             return
         except Exception as e:
             last_err = str(e)
-            print(f"[shein] attempt {attempt} error: {last_err}")
+            if "ERR_TUNNEL_CONNECTION_FAILED" in last_err or "ERR_PROXY" in last_err:
+                last_err = "Proxy tunnel failed (check PROXY_SCHEME/USER/PASS/HOST/PORT)."
             if discord_channel:
-                if "ERR_TUNNEL_CONNECTION_FAILED" in last_err or "ERR_PROXY" in last_err:
-                    last_err = "Proxy tunnel failed (check PROXY_USER/PROXY_PASS/host/port)."
                 await discord_channel.send(
                     f"❌ SHEIN error (attempt {attempt}/3): {last_err[:400]} at {link}"
                 )
             await asyncio.sleep(jitter(2, 5))
 
-    fail_msg = f"❌ SHEIN failed after 3 attempts: {link}"
-    print(fail_msg)
     if discord_channel:
-        await discord_channel.send(fail_msg)
-    try:
-        with open("boost_failures.txt", "a") as f:
-            f.write(f"{link} | {last_err}\n")
-    except:
-        pass
+        await discord_channel.send(f"❌ SHEIN failed after 3 attempts: {link}")
