@@ -100,4 +100,48 @@ async def _open_with_proxy(link: str, proxy: Dict):
 
             msg = str(e)
             # Retry if it's likely a proxy/nav flake; otherwise break
-            retryable = any(x in
+            retryable = any(x in msg for x in [
+                "Target closed",
+                "ERR_TUNNEL_CONNECTION_FAILED",
+                "ERR_NO_SUPPORTED_PROXIES",
+                "Navigation timeout",
+                "net::ERR_PROXY",
+                "net::ERR_NETWORK_CHANGED",
+            ])
+            if retryable:
+                await asyncio.sleep(jitter(1.5, 3.0))
+                continue
+            else:
+                break
+
+    # If we get here, all attempts failed
+    raise last_err if last_err else RuntimeError("Unknown proxy error")
+
+async def boost_shein_link(link: str, discord_channel=None):
+    async with BOOST_LOCK:
+        attempts = 3
+        for attempt in range(1, attempts + 1):
+            proxy = get_random_proxy()
+            scheme_label = (proxy.get("scheme") or "http").lower()
+            if discord_channel:
+                await discord_channel.send(
+                    f"🧑‍💻 SHEIN attempt {attempt}/{attempts} via {scheme_label}://{proxy['ip']}:{proxy['port']}"
+                )
+            try:
+                await _open_with_proxy(link, proxy)
+                if discord_channel:
+                    await discord_channel.send(f"✅ SHEIN success: {link}")
+                return
+            except Exception as e:
+                msg = str(e)
+                if "ERR_NO_SUPPORTED_PROXIES" in msg:
+                    msg = "Chrome rejected the proxy (ERR_NO_SUPPORTED_PROXIES)."
+                elif "ERR_TUNNEL_CONNECTION_FAILED" in msg:
+                    msg = "Proxy tunnel failed (check scheme/user/pass/host/port)."
+                elif "Target closed" in msg:
+                    msg = "Chromium target closed unexpectedly."
+                if discord_channel:
+                    await discord_channel.send(f"❌ SHEIN error {attempt}/{attempts}: {msg} at {link}")
+                await asyncio.sleep(jitter(2, 5))
+        if discord_channel:
+            await discord_channel.send(f"❌ SHEIN failed after {attempts} attempts: {link}")
