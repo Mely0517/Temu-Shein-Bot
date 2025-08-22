@@ -1,8 +1,9 @@
 # proxy_utils.py
 import os, random
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 
-DEFAULT_SCHEME = os.getenv("PROXY_SCHEME", "http").lower()  # http or socks5
+# Choose default scheme via env: http or socks5
+DEFAULT_SCHEME = os.getenv("PROXY_SCHEME", "http").lower()
 
 def _strip(s: Optional[str]) -> Optional[str]:
     return s.strip() if isinstance(s, str) else s
@@ -35,21 +36,21 @@ def _parse(line: str) -> Optional[Dict]:
         user, pw = (creds.split(":", 1) + [None])[:2]
         return {"ip": _strip(host), "port": _strip(port),
                 "username": _strip(user), "password": _strip(pw),
-                "scheme": scheme}
+                "scheme": scheme or DEFAULT_SCHEME}
 
     parts = rest.split(":")
     if len(parts) == 2:
         host, port = parts
         return {"ip": _strip(host), "port": _strip(port),
-                "username": None, "password": None, "scheme": scheme}
+                "username": None, "password": None, "scheme": scheme or DEFAULT_SCHEME}
     if len(parts) == 4:
         host, port, user, pw = parts
         return {"ip": _strip(host), "port": _strip(port),
                 "username": _strip(user), "password": _strip(pw),
-                "scheme": scheme}
+                "scheme": scheme or DEFAULT_SCHEME}
     return None
 
-def _load_list_from_env():
+def _load_list_from_env() -> List[Dict]:
     env = os.getenv("PROXY_LIST")
     if not env: return []
     out = []
@@ -58,7 +59,7 @@ def _load_list_from_env():
         if p: out.append(p)
     return out
 
-def _load_from_file(path="proxies.txt"):
+def _load_from_file(path="proxies.txt") -> List[Dict]:
     if not os.path.exists(path): return []
     out = []
     with open(path, "r", encoding="utf-8") as f:
@@ -68,14 +69,16 @@ def _load_from_file(path="proxies.txt"):
     return out
 
 def get_random_proxy() -> Dict:
-    # Priority: PROXY_LIST (env) → proxies.txt
+    """
+    Returns a proxy dict (ip, port, username?, password?, scheme)
+    Priority: PROXY_LIST (env) → proxies.txt
+    """
     candidates = _load_list_from_env()
     if not candidates:
         candidates = _load_from_file("proxies.txt")
     if not candidates:
         raise ValueError("❌ No proxies found. Add lines to proxies.txt or set PROXY_LIST.")
     p = random.choice(candidates)
-    # normalize port to str
     p["port"] = str(p["port"])
     if not p.get("scheme"):
         p["scheme"] = DEFAULT_SCHEME
