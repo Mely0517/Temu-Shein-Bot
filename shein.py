@@ -43,7 +43,11 @@ async def _launch_with_proxy(proxy: Dict, scheme: str):
         ],
         "defaultViewport": {"width": 1366, "height": 768},
     })
-    page = await browser.newPage()
+    # Set a nav timeout; pyppeteer doesn't have setDefaultTimeout()
+try:
+    page.setDefaultNavigationTimeout(90000)  # 90s
+except AttributeError:
+    pass
 
     # Apply timeouts early
     page.setDefaultNavigationTimeout(90000)
