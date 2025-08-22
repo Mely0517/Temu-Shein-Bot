@@ -1,9 +1,21 @@
+# render.yaml
 services:
-  - type: worker
-    name: temu-shein-bot
+  - type: web
+    name: shein-temu-bot
     env: python
     plan: free
-    buildCommand: |
-      pip install --upgrade pip
-      pip install --no-cache-dir -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: python main.py
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false     # set in Render Dashboard
+      - key: DISCORD_ADMIN_ID
+        sync: false     # optional, set if you want admin-only commands
+      - key: PROXY_HOST
+        sync: false     # e.g. geo.iproyal.com
+      - key: PROXY_PORT
+        sync: false     # e.g. 12321
+      - key: PROXY_USER
+        sync: false     # your IPRoyal username/email
+      - key: PROXY_PASS
+        sync: false     # your IPRoyal password
