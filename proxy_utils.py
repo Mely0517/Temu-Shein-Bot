@@ -82,4 +82,4 @@ def get_random_proxy() -> Dict:
     p["port"] = str(p["port"])
     if not p.get("scheme"):
         p["scheme"] = DEFAULT_SCHEME
-    return p
+    return p  # ✅ IMPORTANT: return the chosen proxy
