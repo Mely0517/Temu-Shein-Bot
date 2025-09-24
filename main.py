@@ -5,7 +5,8 @@ import discord
 from discord.ext import commands
 from background import background_boost_loop, get_boost_stats, reload_links
 
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+# Use ONE env var name and set it in Render
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")  # Set this in Render → Environment
 ADMIN_ID = os.getenv("DISCORD_ADMIN_ID")  # optional: restrict !status / !refresh
 
 if not TOKEN:
@@ -42,10 +43,9 @@ async def on_resumed():
     print("✅ Discord gateway session resumed successfully.")
 
 
-# Accept the entire remainder of the message (so captions/newlines work)
 @bot.command(name="boost", help="Boost a SHEIN/TEMU link. Usage: !boost <url> or paste text with a url")
 async def boost(ctx, *, link_text: str = ""):
-    # Fallback: if parser gave us nothing, use the full message content
+    # If nothing passed, use raw message
     if not link_text:
         link_text = ctx.message.content
 
@@ -64,18 +64,19 @@ async def boost(ctx, *, link_text: str = ""):
 
     await ctx.reply(f"✅ Found {len(unique_urls)} link(s). Starting boost…")
 
-    # Lazy imports to avoid startup errors if one module fails
-    from shein import boost_shein_link
-    from temu import boost_temu_link
+    # Correct lazy imports — use our boosters from boost.py
+    from boost import boost_shein_link, boost_temu_link
 
     for u in unique_urls:
         try:
             if "shein.com" in u:
                 await ctx.send(f"🧑‍💻 SHEIN: working on {u}")
-                await boost_shein_link(u, ctx.channel)
+                msg = await boost_shein_link(u)  # returns a short status string
+                await ctx.send(f"➡️ {msg}")
             elif "temu.com" in u:
                 await ctx.send(f"🧑‍💻 TEMU: working on {u}")
-                await boost_temu_link(u, ctx.channel)
+                msg = await boost_temu_link(u)
+                await ctx.send(f"➡️ {msg}")
             else:
                 await ctx.send(f"❌ Skipping non-supported link: {u}")
         except Exception as e:
@@ -98,5 +99,5 @@ async def refresh(ctx):
     await ctx.send("🔄 Link files reloaded.")
 
 
-# Explicit reconnect (default is True, but we set it to be clear)
+# Explicit reconnect (default True)
 bot.run(TOKEN, reconnect=True)
