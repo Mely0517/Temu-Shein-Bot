@@ -1,0 +1,15 @@
+discord.py>=2.2.2
+
+# Selenium stack (TEMU with proxy auth)
+selenium
+undetected-chromedriver
+selenium-wire
+
+# Pyppeteer stack (SHEIN)
+pyppeteer
+pyppeteer-stealth
+
+# Utilities
+beautifulsoup4
+requests
+setuptools
