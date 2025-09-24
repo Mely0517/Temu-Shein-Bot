@@ -5,9 +5,11 @@ selenium
 undetected-chromedriver
 selenium-wire
 
-# Pyppeteer stack (SHEIN)
-pyppeteer
-pyppeteer-stealth
+# Pyppeteer stack (SHEIN) — pinned
+pyppeteer==1.0.2
+pyppeteer-stealth==2.7.4
+websockets==10.4
+pyee==8.2.2
 
 # Utilities
 beautifulsoup4
