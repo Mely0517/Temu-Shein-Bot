@@ -1,6 +1,0 @@
-discord.py>=2.2.2
-selenium
-undetected-chromedriver
-beautifulsoup4
-requests
-setuptools
