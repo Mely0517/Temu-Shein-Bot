@@ -1,0 +1,16 @@
+services:
+  - type: worker
+    name: shein-temu-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: DISCORD_BOT_TOKEN
+        sync: false     # set in Render Dashboard
+      - key: DISCORD_ADMIN_ID
+        sync: false     # optional, your Discord user ID for admin-only commands
+      - key: PROXY_LIST
+        sync: false     # multiline list of proxies
+      - key: PROXY_SCHEME
+        value: http     # default if lines don’t include a scheme
