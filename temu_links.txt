@@ -1,9 +1,0 @@
-# TEMU referral links
-# Add one link per line.
-# Lines starting with # are ignored.
-
-# Example TEMU link:
-https://temu.com/s/xxxxxx
-
-# Add more below:
-# https://temu.com/s/yyyyyy
