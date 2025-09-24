@@ -1,9 +1,0 @@
-# SHEIN referral links
-# Add one link per line.
-# Lines starting with # are ignored.
-
-# Example SHEIN link:
-https://onelink.shein.com/15/4wnrsnoqjfo6
-
-# Add more below:
-# https://onelink.shein.com/15/xxxxxxx
