@@ -1,0 +1,37 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# Puppeteer/Chromium downloads
+pyppeteer/
+.local-chromium/
+*/.local-chromium/*
+/opt/render/.local/share/pyppeteer/
+
+# Logs and temp files
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Python packaging
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Secrets
+.env
+.env.local
+
+# Keep our link lists if you want them tracked (uncomment to include)
+#!shein_links.txt
+#!temu_links.txt
+#!proxies.txt
