@@ -13,3 +13,4 @@ pyppeteer-stealth
 beautifulsoup4
 requests
 setuptools
+blinker==1.6.2
